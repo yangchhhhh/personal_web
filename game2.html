@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>喵星人跑酷</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #87CEEB;
+            overflow: hidden;
+            touch-action: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px white;
+            pointer-events: none;
+        }
+        #gameOverScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 20;
+        }
+        /* 暂停菜单样式 */
+        #pauseMenu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+        }
+        .pause-box {
+            background: #222;
+            border: 2px solid #555;
+            border-radius: 10px;
+            padding: 40px;
+            width: 300px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);
+        }
+        .pause-box h1 {
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+        .pause-box button {
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+            transition: 0.2s;
+        }
+        .pause-box button:hover {
+            transform: scale(1.05);
+            background: #6fbf6f;
+        }
+        h1 { margin: 0 0 15px 0; color: #ff4757; }
+        p { font-size: 18px; margin-bottom: 20px; }
+        button {
+            padding: 12px 24px;
+            font-size: 18px;
+            background-color: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s;
+        }
+        button:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <div id="ui">得分: <span id="score">0</span></div>
+    
+    <div id="gameOverScreen">
+        <h1>游戏结束!</h1>
+        <p>最终得分: <span id="finalScore">0</span></p>
+        <button onclick="resetGame()">再玩一次</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- 暂停菜单 -->
+    <div id="pauseMenu">
+        <div class="pause-box">
+            <h1>游戏暂停</h1>
+            <button onclick="resumeGame()">继续游戏</button><br>
+            <button onclick="returnToGallery()">返回游戏库</button><br>
+            <button onclick="toggleFullScreen()">全屏模式</button>
+        </div>
+    </div>
+
+    <script>
+        let gameTimer = null;
+        let animationId = null;
+        function stopGame() {
+            isPaused = false;
+            if (gameTimer) {
+                clearTimeout(gameTimer);
+                gameTimer = null;
+            }
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+        function returnToGallery() {
+            stopGame();
+            try {
+                if (window.parent && window.parent !== window && typeof window.parent.backToGallery === 'function') {
+                    window.parent.backToGallery();
+                    return;
+                }
+            } catch (err) {
+                console.warn('无法调用 parent.backToGallery：', err);
+            }
+            try {
+                if (window.top && window.top !== window) {
+                    window.top.location.href = 'index.html#game';
+                    return;
+                }
+            } catch (err) {
+                console.warn('无法调用 top.location：', err);
+            }
+            window.location.href = 'index.html#game';
+        }
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreElement = document.getElementById('finalScore');
+        const pauseMenu = document.getElementById('pauseMenu');
+
+        // 设置画布大小为全屏
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 游戏变量
+        let score = 0;
+        let gameSpeed = 5;
+        let isGameOver = false;
+        let isPaused = false;
+        let frameCount = 0;
+        let groundHeight = 100;
+
+        // 玩家 (喵星人)
+        const player = {
+            x: 50,
+            y: 0,
+            width: 40,
+            height: 40,
+            dy: 0,
+            gravity: 0.6,
+            jumpForce: -12,
+            jumps: 0,
+            maxJumps: 2,
+            emoji: '🐱'
+        };
+
+        let obstacles = [];
+
+        function getGroundY() {
+            return canvas.height - groundHeight;
+        }
+
+        function jump() {
+            if (isGameOver || isPaused) return;
+            if (player.jumps < player.maxJumps) {
+                player.dy = player.jumpForce;
+                player.jumps++;
+            }
+        }
+
+        // ESC 暂停
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (!isGameOver) {
+                    isPaused = !isPaused;
+                    pauseMenu.style.display = isPaused ? 'flex' : 'none';
+                    if (!isPaused) gameLoop(); // 恢复后继续循环
+                }
+            }
+            if (e.code === 'Space' || e.code === 'ArrowUp') jump();
+        });
+        window.addEventListener('mousedown', jump);
+        window.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        }, { passive: false });
+
+        function resumeGame() {
+            isPaused = false;
+            pauseMenu.style.display = 'none';
+            gameLoop();
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function spawnObstacle() {
+            let size = 40 + Math.random() * 20;
+            let type = Math.random() > 0.5 ? '🌵' : '🧱';
+            obstacles.push({
+                x: canvas.width,
+                y: getGroundY() - size,
+                width: size,
+                height: size,
+                emoji: type
+            });
+        }
+
+        function resetGame() {
+            player.y = getGroundY() - player.height;
+            player.dy = 0;
+            player.jumps = 0;
+            obstacles = [];
+            score = 0;
+            gameSpeed = 5;
+            frameCount = 0;
+            isGameOver = false;
+            isPaused = false;
+            pauseMenu.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            scoreElement.innerText = score;
+            gameLoop();
+        }
+
+        function checkCollision(rect1, rect2) {
+            const padding = 10;
+            return (
+                rect1.x < rect2.x + rect2.width - padding &&
+                rect1.x + rect1.width - padding > rect2.x &&
+                rect1.y < rect2.y + rect2.height - padding &&
+                rect1.y + rect1.height - padding > rect2.y
+            );
+        }
+
+        function gameLoop() {
+            if (isGameOver || isPaused) return;
+
+            // 清屏
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 画地面
+            ctx.fillStyle = '#6ab04c';
+            ctx.fillRect(0, getGroundY(), canvas.width, groundHeight);
+            ctx.fillStyle = '#535c68';
+            ctx.fillRect(0, getGroundY(), canvas.width, 5);
+
+            // 物理更新
+            player.dy += player.gravity;
+            player.y += player.dy;
+            if (player.y >= getGroundY() - player.height) {
+                player.y = getGroundY() - player.height;
+                player.dy = 0;
+                player.jumps = 0;
+            }
+
+            // 画玩家
+            ctx.font = `${player.width}px Arial`;
+            ctx.fillText(player.emoji, player.x, player.y + player.height - 5);
+
+            // 障碍物逻辑
+            if (frameCount % Math.floor(120 / (gameSpeed / 5)) === 0) {
+                spawnObstacle();
+            }
+
+            for (let i = 0; i < obstacles.length; i++) {
+                let obs = obstacles[i];
+                obs.x -= gameSpeed;
+                ctx.font = `${obs.width}px Arial`;
+                ctx.fillText(obs.emoji, obs.x, obs.y + obs.height - 5);
+                if (checkCollision(player, obs)) {
+                    isGameOver = true;
+                    gameOverScreen.style.display = 'block';
+                    finalScoreElement.innerText = score;
+                    return;
+                }
+            }
+            obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+
+            // 得分和难度
+            frameCount++;
+            if (frameCount % 10 === 0) {
+                score++;
+                scoreElement.innerText = score;
+            }
+            if (score % 100 === 0 && score > 0 && frameCount % 10 === 0) {
+                gameSpeed += 0.5;
+            }
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // 启动游戏
+        resetGame();
+    </script>
+</body>
+</html>

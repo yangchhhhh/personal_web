@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>网页版细胞进化 - 简易孢子</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #0d1a20; color: white; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        canvas { display: block; }
+        
+        /* UI 覆盖层 */
+        #ui-layer { position: absolute; top: 20px; left: 20px; pointer-events: none; }
+        .stat-box { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #444; }
+        
+        /* 进化菜单 (装配中心) */
+        #editor-modal {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 600px; background: rgba(20, 30, 40, 0.95); border: 2px solid #00d2ff; border-radius: 15px;
+            padding: 20px; box-shadow: 0 0 30px rgba(0, 210, 255, 0.3); text-align: center;
+            z-index: 100;
+        }
+        #editor-modal h2 { color: #00d2ff; margin-top: 0; }
+        .part-grid { display: flex; justify-content: center; gap: 20px; margin: 20px 0; }
+        .part-card {
+            background: #2a3b45; padding: 15px; border-radius: 10px; cursor: pointer; width: 120px;
+            border: 1px solid #555; transition: 0.2s;
+        }
+        .part-card:hover { background: #3a4b55; border-color: #00d2ff; transform: translateY(-5px); }
+        .part-card h3 { font-size: 16px; margin: 5px 0; }
+        .part-card p { font-size: 12px; color: #aaa; }
+        .cost { color: #ffdd00; font-weight: bold; }
+        
+        #btn-close {
+            background: #00d2ff; border: none; padding: 10px 30px; color: #000; font-weight: bold; 
+            cursor: pointer; border-radius: 5px; font-size: 16px;
+        }
+        #btn-close:hover { background: #fff; }
+
+        /* 提示 */
+        #controls-hint { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.5); }
+
+        /* 技能冷却指示器 */
+        #cooldown-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            pointer-events: none;
+        }
+        
+        /* 角度选择器 */
+        #angle-selector {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30, 40, 50, 0.95);
+            border: 2px solid #ffdd00;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            z-index: 101;
+        }
+        
+        #angle-slider {
+            width: 200px;
+            margin: 15px 0;
+        }
+        
+        #angle-preview {
+            margin: 15px auto;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #2a3b45;
+            position: relative;
+        }
+        
+        #angle-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 2px;
+            background: #ffdd00;
+            transform-origin: 0 0;
+        }
+        
+        .angle-btn {
+            background: #ffdd00;
+            border: none;
+            padding: 8px 15px;
+            margin: 0 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* 暂停菜单 */
+        #pause-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #pause-menu.show {
+            display: flex;
+        }
+        #pause-menu h2 {
+            color: #fff;
+            font-size: 48px;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #pause-menu button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 24px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #pause-menu button:hover {
+            background: #45a049;
+        }
+        #pause-menu .return-btn {
+            background: #2196F3;
+        }
+        #pause-menu .return-btn:hover {
+            background: #0b7dda;
+        }
+    </style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<!-- 暂停菜单 -->
+<div id="pause-menu">
+    <h2>游戏暂停</h2>
+    <button id="resume-btn">继续游戏</button>
+    <button id="return-btn" class="return-btn">返回画廊</button>
+</div>
+
+<div id="ui-layer">
+    <div class="stat-box">
+        <div style="color:#ffdd00">🧬 DNA: <span id="scoreVal">0</span></div>
+        <div style="color:#ff5555">❤️ 生命: <span id="hpVal">100</span>/<span id="maxHpVal">100</span></div>
+        <div style="color:#00d2ff">⚡ 速度: <span id="spdVal">0</span></div>
+        <div style="color:#ff9900">⚔️ 攻击: <span id="atkVal">0</span></div>
+        <div style="color:#aa66ff">💨 冲刺冷却: <span id="dashCooldown">0</span>s</div>
+    </div>
+</div>
+
+<div id="cooldown-overlay">
+    <div>主动技能:</div>
+    <div id="skill-status">冲刺 (空格键)</div>
+</div>
+
+<div id="controls-hint">鼠标移动控制 | 按 <b>E</b> 键进入进化装配模式 | 按 <b>空格</b> 键冲刺</div>
+
+<div id="editor-modal">
+    <h2>🧬 进化装配中心</h2>
+    <p>消耗 DNA 来突变你的生物器官</p>
+    
+    <div class="part-grid">
+        <div class="part-card" onclick="selectPart('spike')">
+            <div style="font-size:30px">📐</div>
+            <h3>剧毒尖刺</h3>
+            <p>增加攻击力与碰撞伤害</p>
+            <div class="cost">50 DNA</div>
+        </div>
+
+        <div class="part-card" onclick="selectPart('fin')">
+            <div style="font-size:30px">🦈</div>
+            <h3>快速鳍翼</h3>
+            <p>增加移动速度与灵活性</p>
+            <div class="cost">30 DNA</div>
+        </div>
+
+        <div class="part-card" onclick="selectPart('armor')">
+            <div style="font-size:30px">🛡️</div>
+            <h3>甲壳质</h3>
+            <p>增加最大生命值与体积</p>
+            <div class="cost">40 DNA</div>
+        </div>
+    </div>
+
+    <div id="msg-area" style="height: 20px; color: #ff5555; margin-bottom: 10px;"></div>
+    <button id="btn-close" onclick="toggleEditor()">完成进化</button>
+</div>
+
+<div id="angle-selector">
+    <h3>选择部件安装角度</h3>
+    <div id="angle-preview">
+        <div id="angle-indicator"></div>
+    </div>
+    <input type="range" id="angle-slider" min="0" max="360" value="0">
+    <div id="angle-value">0°</div>
+    <div>
+        <button class="angle-btn" onclick="confirmPartPlacement()">确认安装</button>
+        <button class="angle-btn" onclick="cancelPartPlacement()">取消</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 全局设置
+    let width, height;
+    const WORLD_SIZE = 4000; // 地图大小
+    let paused = false;
+    
+    // 游戏状态
+    let game = {
+        camera: { x: 0, y: 0 },
+        dna: 0,
+        particles: [],
+        foods: [],
+        enemies: [],
+        poisonClouds: [] // 毒液云
+    };
+
+    // 玩家对象
+    let player = {
+        x: WORLD_SIZE / 2,
+        y: WORLD_SIZE / 2,
+        radius: 20,
+        color: '#00d2ff',
+        angle: 0, // 身体朝向
+        stats: {
+            maxHp: 100,
+            hp: 100,
+            speed: 3,
+            damage: 5
+        },
+        parts: [], // 身体部件列表 {type: 'spike', angle: 0.5}
+        // 冲刺技能相关属性
+        dash: {
+            isDashing: false,
+            dashSpeed: 10,
+            dashDuration: 0.3, // 秒
+            dashTimer: 0,
+            cooldown: 5, // 秒
+            cooldownTimer: 0
+        },
+        // 毒液技能相关属性
+        venom: {
+            isActive: false,
+            cooldown: 8, // 秒
+            cooldownTimer: 0,
+            duration: 2, // 秒
+            timer: 0,
+            damage: 10 // 每秒伤害
+        }
+    };
+
+    // 鼠标位置
+    let mouse = { x: 0, y: 0 };
+
+    // 进化系统状态
+    let evolution = {
+        selectedPart: null,
+        selectedAngle: 0
+    };
+
+    // 初始化
+    function init() {
+        resize();
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        window.addEventListener('keydown', e => {
+            if (e.key === 'e' || e.key === 'E') toggleEditor();
+            if (e.key === ' ' && !paused) activateDash(); // 空格键冲刺
+        });
+        
+        // 角度滑块事件
+        document.getElementById('angle-slider').addEventListener('input', function() {
+            evolution.selectedAngle = parseInt(this.value) * Math.PI / 180;
+            updateAnglePreview();
+        });
+
+        // 生成初始食物
+        for(let i=0; i<300; i++) spawnFood();
+        // 生成初始敌人
+        for(let i=0; i<20; i++) spawnEnemy();
+
+        loop();
+    }
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+
+    // --- 游戏逻辑 ---
+
+    // 生成食物
+    function spawnFood() {
+        game.foods.push({
+            x: Math.random() * WORLD_SIZE,
+            y: Math.random() * WORLD_SIZE,
+            r: 3 + Math.random() * 3,
+            color: `hsl(${Math.random()*60 + 100}, 70%, 60%)`,
+            dnaValue: 2
+        });
+    }
+
+    // 生成敌人 (带有随机部件和AI类型)
+    function spawnEnemy() {
+        let r = 15 + Math.random() * 40;
+        
+        // 随机选择AI类型
+        const aiTypes = ['wander', 'hunter', 'coward'];
+        const aiType = aiTypes[Math.floor(Math.random() * aiTypes.length)];
+        
+        let enemy = {
+            x: Math.random() * WORLD_SIZE,
+            y: Math.random() * WORLD_SIZE,
+            radius: r,
+            color: aiType === 'hunter' ? '#ff2222' : aiType === 'coward' ? '#ffaa00' : '#ff4444',
+            vx: Math.random() - 0.5,
+            vy: Math.random() - 0.5,
+            hp: r * 5,
+            maxHp: r * 5,
+            damage: r * 0.5,
+            parts: [],
+            aiType: aiType,
+            detectionRange: 300, // 检测范围
+            fleeRange: 200, // 逃跑范围
+            lastAiUpdate: 0,
+            aiUpdateInterval: 0.5 // AI更新间隔(秒)
+        };
+
+        // 随机给敌人加一点刺
+        if (Math.random() > 0.5) {
+            let spikes = Math.floor(Math.random() * 5);
+            for(let i=0; i<spikes; i++) {
+                enemy.parts.push({ type: 'spike', angle: (Math.PI * 2 / spikes) * i });
+                enemy.damage += 5;
+            }
+        }
+        game.enemies.push(enemy);
+    }
+
+    // 更新敌人AI
+    function updateEnemyAI(enemy, deltaTime) {
+        enemy.lastAiUpdate += deltaTime;
+        if (enemy.lastAiUpdate < enemy.aiUpdateInterval) return;
+        
+        enemy.lastAiUpdate = 0;
+        
+        const distToPlayer = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+        
+        // 不同类型的AI行为
+        switch(enemy.aiType) {
+            case 'hunter':
+                // 猎人型：追逐玩家
+                if (distToPlayer < enemy.detectionRange) {
+                    const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+                    enemy.vx = Math.cos(angle) * 0.8;
+                    enemy.vy = Math.sin(angle) * 0.8;
+                } else {
+                    // 随机游荡
+                    if (Math.random() < 0.02) {
+                        enemy.vx = (Math.random() - 0.5) * 2;
+                        enemy.vy = (Math.random() - 0.5) * 2;
+                    }
+                }
+                break;
+                
+            case 'coward':
+                // 胆小型：如果玩家有尖刺就逃跑
+                const playerHasSpikes = player.parts.some(part => part.type === 'spike');
+                
+                if (playerHasSpikes && distToPlayer < enemy.fleeRange) {
+                    // 逃离玩家
+                    const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+                    enemy.vx = -Math.cos(angle) * 1.2;
+                    enemy.vy = -Math.sin(angle) * 1.2;
+                } else if (distToPlayer < enemy.detectionRange) {
+                    // 追逐玩家（如果没有尖刺）
+                    const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+                    enemy.vx = Math.cos(angle) * 0.7;
+                    enemy.vy = Math.sin(angle) * 0.7;
+                } else {
+                    // 随机游荡
+                    if (Math.random() < 0.02) {
+                        enemy.vx = (Math.random() - 0.5) * 1.5;
+                        enemy.vy = (Math.random() - 0.5) * 1.5;
+                    }
+                }
+                break;
+                
+            case 'wander':
+            default:
+                // 游荡型：随机移动
+                if (Math.random() < 0.01) {
+                    enemy.vx = (Math.random() - 0.5) * 1.5;
+                    enemy.vy = (Math.random() - 0.5) * 1.5;
+                }
+                break;
+        }
+        
+        // 限制速度
+        const speed = Math.hypot(enemy.vx, enemy.vy);
+        if (speed > 2) {
+            enemy.vx = enemy.vx / speed * 2;
+            enemy.vy = enemy.vy / speed * 2;
+        }
+    }
+
+    // 激活冲刺技能
+    function activateDash() {
+        if (player.dash.cooldownTimer <= 0 && !player.dash.isDashing) {
+            player.dash.isDashing = true;
+            player.dash.dashTimer = player.dash.dashDuration;
+            player.dash.cooldownTimer = player.dash.cooldown;
+        }
+    }
+
+    // 激活毒液技能
+    function activateVenom() {
+        if (player.venom.cooldownTimer <= 0 && !player.venom.isActive) {
+            player.venom.isActive = true;
+            player.venom.timer = player.venom.duration;
+            player.venom.cooldownTimer = player.venom.cooldown;
+            
+            // 创建毒液云
+            for (let i = 0; i < 8; i++) {
+                const angle = (Math.PI * 2 / 8) * i;
+                game.poisonClouds.push({
+                    x: player.x,
+                    y: player.y,
+                    radius: 60,
+                    angle: angle,
+                    speed: 2,
+                    damage: player.venom.damage,
+                    timer: player.venom.duration
+                });
+            }
+        }
+    }
+
+    // 更新技能状态
+    function updateSkills(deltaTime) {
+        // 更新冲刺技能
+        if (player.dash.isDashing) {
+            player.dash.dashTimer -= deltaTime;
+            if (player.dash.dashTimer <= 0) {
+                player.dash.isDashing = false;
+            }
+        }
+        
+        if (player.dash.cooldownTimer > 0) {
+            player.dash.cooldownTimer -= deltaTime;
+        }
+        
+        // 更新毒液技能
+        if (player.venom.isActive) {
+            player.venom.timer -= deltaTime;
+            if (player.venom.timer <= 0) {
+                player.venom.isActive = false;
+            }
+        }
+        
+        if (player.venom.cooldownTimer > 0) {
+            player.venom.cooldownTimer -= deltaTime;
+        }
+        
+        // 更新毒液云
+        for (let i = game.poisonClouds.length - 1; i >= 0; i--) {
+            const cloud = game.poisonClouds[i];
+            cloud.x += Math.cos(cloud.angle) * cloud.speed;
+            cloud.y += Math.sin(cloud.angle) * cloud.speed;
+            cloud.timer -= deltaTime;
+            
+            // 检查敌人是否在毒液云中
+            game.enemies.forEach(enemy => {
+                const dist = Math.hypot(cloud.x - enemy.x, cloud.y - enemy.y);
+                if (dist < cloud.radius + enemy.radius) {
+                    enemy.hp -= cloud.damage * deltaTime;
+                }
+            });
+            
+            if (cloud.timer <= 0) {
+                game.poisonClouds.splice(i, 1);
+            }
+        }
+        
+        // 更新UI
+        document.getElementById('dashCooldown').textContent = player.dash.cooldownTimer > 0 ? 
+            player.dash.cooldownTimer.toFixed(1) : "就绪";
+        
+        // 根据玩家拥有的部件决定使用哪种技能
+        const hasSpikes = player.parts.some(part => part.type === 'spike');
+        if (hasSpikes) {
+            document.getElementById('skill-status').textContent = "毒液喷射 (空格键)";
+        } else {
+            document.getElementById('skill-status').textContent = "冲刺 (空格键)";
+        }
+    }
+
+    let lastTime = 0;
+    function update(timestamp) {
+        if (paused) return;
+        
+        const deltaTime = timestamp ? (timestamp - lastTime) / 1000 : 0.016;
+        lastTime = timestamp;
+        
+        // 1. 玩家移动
+        // 计算鼠标相对于屏幕中心的方向
+        let dx = mouse.x - width / 2;
+        let dy = mouse.y - height / 2;
+        let dist = Math.hypot(dx, dy);
+        let targetAngle = Math.atan2(dy, dx);
+        
+        // 平滑旋转
+        player.angle = targetAngle;
+
+        // 移动 (如果鼠标离得很近就停下)
+        let currentSpeed = player.stats.speed;
+        if (player.dash.isDashing) {
+            currentSpeed = player.dash.dashSpeed;
+        }
+        
+        if (dist > 10) {
+            player.x += Math.cos(player.angle) * currentSpeed;
+            player.y += Math.sin(player.angle) * currentSpeed;
+        }
+
+        // 边界限制
+        player.x = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.x));
+        player.y = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.y));
+
+        // 2. 摄像机跟随
+        game.camera.x = player.x - width / 2;
+        game.camera.y = player.y - height / 2;
+
+        // 3. 更新技能
+        updateSkills(deltaTime);
+
+        // 4. 食物逻辑
+        for (let i = game.foods.length - 1; i >= 0; i--) {
+            let f = game.foods[i];
+            let d = Math.hypot(player.x - f.x, player.y - f.y);
+            if (d < player.radius + f.r) {
+                // 吃到食物
+                game.dna += f.dnaValue;
+                heal(1);
+                game.foods.splice(i, 1);
+                spawnFood(); // 补充食物
+            }
+        }
+
+        // 5. 敌人逻辑 & 战斗
+        for (let i = game.enemies.length - 1; i >= 0; i--) {
+            let e = game.enemies[i];
+            
+            // 更新AI
+            updateEnemyAI(e, deltaTime);
+            
+            // 移动
+            e.x += e.vx;
+            e.y += e.vy;
+
+            // 碰到边界反弹
+            if(e.x < e.radius || e.x > WORLD_SIZE - e.radius) e.vx *= -1;
+            if(e.y < e.radius || e.y > WORLD_SIZE - e.radius) e.vy *= -1;
+
+            // 碰撞检测
+            let d = Math.hypot(player.x - e.x, player.y - e.y);
+            
+            if (d < player.radius + e.radius) {
+                // 发生接触战斗
+                let canEat = player.radius > e.radius * 1.2;
+                
+                if (canEat) {
+                    // 吞噬
+                    game.dna += Math.floor(e.maxHp / 2);
+                    heal(20);
+                    game.enemies.splice(i, 1);
+                    spawnEnemy();
+                    spawnParticles(e.x, e.y, e.color, 10);
+                } else {
+                    // 碰撞伤害
+                    if (player.stats.hp > 0) {
+                        // 敌人对玩家伤害
+                        player.stats.hp -= 0.5; 
+                        // 玩家对敌人伤害 (基于攻击力)
+                        e.hp -= player.stats.damage * 0.1;
+                        
+                        // 击退效果
+                        let angle = Math.atan2(player.y - e.y, player.x - e.x);
+                        player.x += Math.cos(angle) * 2;
+                        player.y += Math.sin(angle) * 2;
+                        e.x -= Math.cos(angle) * 2;
+                        e.y -= Math.sin(angle) * 2;
+
+                        // 敌人死亡
+                        if (e.hp <= 0) {
+                            game.dna += Math.floor(e.maxHp);
+                            game.enemies.splice(i, 1);
+                            spawnEnemy();
+                            spawnParticles(e.x, e.y, '#ff0000', 15);
+                        }
+                    } else {
+                        // 玩家死亡
+                        alert("你被自然法则淘汰了！刷新页面重试。");
+                        location.reload();
+                    }
+                }
+            }
+        }
+
+        // 更新UI
+        document.getElementById('scoreVal').innerText = game.dna;
+        document.getElementById('hpVal').innerText = Math.floor(player.stats.hp);
+        document.getElementById('maxHpVal').innerText = player.stats.maxHp;
+        document.getElementById('spdVal').innerText = player.stats.speed.toFixed(1);
+        document.getElementById('atkVal').innerText = player.stats.damage;
+    }
+
+    // 粒子效果 (简易)
+    function spawnParticles(x, y, color, count) {
+        // 这里为了代码简洁省略了复杂的粒子系统，仅作为占位符
+    }
+
+    function heal(amount) {
+        player.stats.hp = Math.min(player.stats.hp + amount, player.stats.maxHp);
+    }
+
+    // --- 渲染 ---
+
+    function draw() {
+        // 清空背景
+        ctx.fillStyle = '#0d1a20';
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.save();
+        // 移动摄像机视角
+        ctx.translate(-game.camera.x, -game.camera.y);
+
+        // 绘制网格背景
+        drawGrid();
+
+        // 绘制食物
+        game.foods.forEach(f => {
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+            ctx.fillStyle = f.color;
+            ctx.fill();
+        });
+
+        // 绘制毒液云
+        game.poisonClouds.forEach(cloud => {
+            ctx.beginPath();
+            ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(100, 255, 100, ${cloud.timer / player.venom.duration * 0.3})`;
+            ctx.fill();
+        });
+
+        // 绘制敌人
+        game.enemies.forEach(e => {
+            drawCreature(e, e.x, e.y, e.radius, e.color, e.parts, Date.now() / 500);
+            // 血条
+            ctx.fillStyle = 'red';
+            ctx.fillRect(e.x - 20, e.y - e.radius - 10, 40 * (e.hp / e.maxHp), 5);
+            
+            // 绘制AI类型标识
+            if (e.aiType === 'hunter') {
+                ctx.fillStyle = '#ff2222';
+                ctx.fillText('👁️', e.x - 5, e.y - e.radius - 15);
+            } else if (e.aiType === 'coward') {
+                ctx.fillStyle = '#ffaa00';
+                ctx.fillText('🏃', e.x - 5, e.y - e.radius - 15);
+            }
+        });
+
+        // 绘制玩家
+        drawCreature(player, player.x, player.y, player.radius, player.color, player.parts, player.angle);
+        
+        // 绘制冲刺效果
+        if (player.dash.isDashing) {
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius + 5, 0, Math.PI*2);
+            ctx.strokeStyle = `rgba(0, 210, 255, ${player.dash.dashTimer / player.dash.dashDuration})`;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        ctx.restore();
+        requestAnimationFrame(loop);
+    }
+
+    function drawGrid() {
+        ctx.strokeStyle = '#1a2b33';
+        ctx.lineWidth = 1;
+        const gridSize = 100;
+        // 简单的视锥剔除优化
+        let startX = Math.floor(game.camera.x / gridSize) * gridSize;
+        let startY = Math.floor(game.camera.y / gridSize) * gridSize;
+        
+        for(let x = startX; x < startX + width + gridSize; x += gridSize) {
+            ctx.beginPath(); ctx.moveTo(x, startY); ctx.lineTo(x, startY + height + gridSize); ctx.stroke();
+        }
+        for(let y = startY; y < startY + height + gridSize; y += gridSize) {
+            ctx.beginPath(); ctx.moveTo(startX, y); ctx.lineTo(startX + width + gridSize, y); ctx.stroke();
+        }
+        
+        // 边界
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(0,0, WORLD_SIZE, WORLD_SIZE);
+    }
+
+    // 核心：生物绘制函数 (支持装配部件)
+    function drawCreature(entity, x, y, r, color, parts, rotation) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // 如果是玩家，按照鼠标旋转；如果是敌人，简单的自转或者移动方向
+        if (entity === player) ctx.rotate(rotation);
+        else ctx.rotate(Math.sin(rotation)); // 简单的摆动动画
+
+        // 1. 绘制身体部件 (先画部件，让它们看起来长在身上)
+        parts.forEach(part => {
+            ctx.save();
+            ctx.rotate(part.angle);
+            ctx.translate(r, 0); // 移到圆周表面
+
+            if (part.type === 'spike') {
+                // 画刺
+                ctx.fillStyle = '#dddddd';
+                ctx.beginPath();
+                ctx.moveTo(0, -5);
+                ctx.lineTo(15, 0); // 刺的长度
+                ctx.lineTo(0, 5);
+                ctx.fill();
+            } else if (part.type === 'fin') {
+                // 画鳍
+                ctx.fillStyle = 'rgba(0, 210, 255, 0.5)';
+                ctx.beginPath();
+                ctx.moveTo(-5, 0);
+                ctx.quadraticCurveTo(10, -10, 20, 0);
+                ctx.quadraticCurveTo(10, 10, -5, 0);
+                ctx.fill();
+            } else if (part.type === 'armor') {
+                // 画甲壳 (覆盖在表面)
+                ctx.fillStyle = '#556677';
+                ctx.fillRect(-5, -8, 8, 16);
+            }
+            ctx.restore();
+        });
+
+        // 2. 绘制主体
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI*2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        
+        // 绘制眼睛 (简单表示方向)
+        ctx.fillStyle = 'white';
+        ctx.beginPath(); ctx.arc(r/2, -r/3, r/4, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r/2, r/3, r/4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'black';
+        ctx.beginPath(); ctx.arc(r/2 + 2, -r/3, r/8, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r/2 + 2, r/3, r/8, 0, Math.PI*2); ctx.fill();
+
+        ctx.restore();
+    }
+
+    function loop(timestamp) {
+        update(timestamp);
+        draw();
+    }
+
+    // --- 进化系统逻辑 ---
+
+    function toggleEditor() {
+        paused = !paused;
+        const modal = document.getElementById('editor-modal');
+        modal.style.display = paused ? 'block' : 'none';
+        document.getElementById('msg-area').innerText = "";
+        
+        // 关闭角度选择器
+        document.getElementById('angle-selector').style.display = 'none';
+    }
+
+    function selectPart(type) {
+        evolution.selectedPart = type;
+        
+        // 显示角度选择器
+        document.getElementById('angle-selector').style.display = 'block';
+        evolution.selectedAngle = 0;
+        document.getElementById('angle-slider').value = 0;
+        updateAnglePreview();
+    }
+
+    function updateAnglePreview() {
+        const indicator = document.getElementById('angle-indicator');
+        const valueDisplay = document.getElementById('angle-value');
+        
+        indicator.style.transform = `rotate(${evolution.selectedAngle}rad)`;
+        valueDisplay.textContent = `${Math.round(evolution.selectedAngle * 180 / Math.PI)}°`;
+    }
+
+    function confirmPartPlacement() {
+        if (evolution.selectedPart) {
+            buyPart(evolution.selectedPart, evolution.selectedAngle);
+        }
+        document.getElementById('angle-selector').style.display = 'none';
+    }
+
+    function cancelPartPlacement() {
+        evolution.selectedPart = null;
+        document.getElementById('angle-selector').style.display = 'none';
+    }
+
+    function buyPart(type, angle) {
+        let cost = 0;
+        if (type === 'spike') cost = 50;
+        if (type === 'fin') cost = 30;
+        if (type === 'armor') cost = 40;
+
+        const msg = document.getElementById('msg-area');
+
+        if (game.dna >= cost) {
+            game.dna -= cost;
+            
+            player.parts.push({ type: type, angle: angle });
+
+            // 应用属性加成
+            if (type === 'spike') {
+                player.stats.damage += 5;
+            } else if (type === 'fin') {
+                player.stats.speed += 0.5;
+            } else if (type === 'armor') {
+                player.stats.maxHp += 20;
+                player.stats.hp += 20;
+                player.radius += 2; // 身体变大
+            }
+
+            msg.style.color = "#00ff00";
+            msg.innerText = "进化成功！";
+            
+            // 更新UI
+            document.getElementById('scoreVal').innerText = game.dna;
+        } else {
+            msg.style.color = "#ff5555";
+            msg.innerText = "DNA 不足！";
+        }
+        
+        evolution.selectedPart = null;
+    }
+
+    // 修改空格键功能：根据玩家是否有尖刺决定使用哪种技能
+    window.addEventListener('keydown', function(e) {
+        if (e.key === ' ' && !paused) {
+            const hasSpikes = player.parts.some(part => part.type === 'spike');
+            if (hasSpikes) {
+                activateVenom();
+            } else {
+                activateDash();
+            }
+        }
+    });
+
+    init();
+</script>
+
+<!-- 暂停菜单 -->
+<div id="pauseMenu" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 30;">
+    <div style="background: #222; border: 2px solid #555; border-radius: 10px; padding: 40px; width: 300px; text-align: center; color: white; box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);">
+        <h1>游戏暂停</h1>
+        <button onclick="resumeGame()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #4caf50; color: white; border: none; border-radius: 5px; margin: 10px;">继续游戏</button><br>
+        <button onclick="returnToGallery()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #2196f3; color: white; border: none; border-radius: 5px; margin: 10px;">返回游戏库</button><br>
+        <button onclick="toggleFullScreen()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #ff9800; color: white; border: none; border-radius: 5px; margin: 10px;">全屏模式</button>
+    </div>
+</div>
+
+<script>
+    let isPaused = false;
+
+    function stopGame() {
+        isPaused = true;
+    }
+
+    function returnToGallery() {
+        stopGame();
+        // 优先使用父窗口的 backToGallery 函数（iframe 场景）
+        if (window.parent && window.parent.backToGallery) {
+            window.parent.backToGallery();
+        } else if (window.parent && window.parent.location) {
+            window.parent.location.href = 'index.html';
+        } else if (window.top && window.top.location) {
+            window.top.location.href = 'index.html';
+        } else {
+            window.location.href = 'index.html';
+        }
+    }
+
+    function resumeGame() {
+        isPaused = false;
+        document.getElementById('pauseMenu').style.display = 'none';
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    // 添加 ESC 键监听
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            isPaused = !isPaused;
+            document.getElementById('pauseMenu').style.display = isPaused ? 'flex' : 'none';
+        }
+    });
+</script>
+</body>
+</html>

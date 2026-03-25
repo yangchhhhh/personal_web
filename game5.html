@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>简易网页 FPS 游戏</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
+        
+        /* 准星 */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            background-color: transparent;
+            border: 2px solid lime;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none; /* 让点击穿透准星 */
+            z-index: 10;
+        }
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background-color: red;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+        }
+
+        /* 游戏说明遮罩层 */
+        #instructions {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 20;
+        }
+        h1 { margin: 0; font-size: 40px; }
+        p { font-size: 18px; }
+    </style>
+</head>
+<body>
+
+    <div id="crosshair"></div>
+    <div id="instructions">
+        <h1>点击开始游戏</h1>
+        <p>移动: W, A, S, D</p>
+        <p>跳跃: 空格</p>
+        <p>射击: 鼠标左键</p>
+        <p>视角: 移动鼠标</p>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // 1. 场景初始化
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // 天空蓝背景
+        scene.fog = new THREE.Fog(0x87CEEB, 0, 750);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.y = 10; // 玩家高度
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. 灯光
+        const light = new THREE.HemisphereLight(0xeeeeff, 0x777788, 0.75);
+        light.position.set(0.5, 1, 0.75);
+        scene.add(light);
+
+        // 3. 控制器 (FPS视角核心)
+        const controls = new PointerLockControls(camera, document.body);
+        const instructions = document.getElementById('instructions');
+
+        instructions.addEventListener('click', function () {
+            controls.lock();
+        });
+
+        controls.addEventListener('lock', function () {
+            instructions.style.display = 'none';
+        });
+
+        controls.addEventListener('unlock', function () {
+            instructions.style.display = 'flex';
+        });
+
+        scene.add(controls.getObject());
+
+        // 4. 移动逻辑变量
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+        let canJump = false;
+
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+
+        // 键盘监听
+        const onKeyDown = function (event) {
+            switch (event.code) {
+                case 'ArrowUp': case 'KeyW': moveForward = true; break;
+                case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
+                case 'ArrowDown': case 'KeyS': moveBackward = true; break;
+                case 'ArrowRight': case 'KeyD': moveRight = true; break;
+                case 'Space': if (canJump === true) velocity.y += 350; canJump = false; break;
+            }
+        };
+
+        const onKeyUp = function (event) {
+            switch (event.code) {
+                case 'ArrowUp': case 'KeyW': moveForward = false; break;
+                case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
+                case 'ArrowDown': case 'KeyS': moveBackward = false; break;
+                case 'ArrowRight': case 'KeyD': moveRight = false; break;
+            }
+        };
+
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
+
+        // 5. 创建环境 (地板)
+        const floorGeometry = new THREE.PlaneGeometry(2000, 2000, 100, 100);
+        floorGeometry.rotateX(-Math.PI / 2);
+        const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, wireframe: true }); // 网格地板更具科技感
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        scene.add(floor);
+
+        // 6. 敌人系统
+        const enemies = [];
+        const enemyGeometry = new THREE.BoxGeometry(10, 10, 10);
+        const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+
+        function spawnEnemy() {
+            // 限制最大敌人数
+            if(enemies.length > 20) return;
+
+            const enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
+            // 随机位置生成
+            const x = Math.floor(Math.random() * 400 - 200);
+            const z = Math.floor(Math.random() * 400 - 200);
+            enemy.position.set(x, 5, z); // y=5 因为高度是10，一半在地板上
+            
+            // 别生成在玩家脸上
+            if(Math.abs(x) < 20 && Math.abs(z) < 20) return;
+
+            scene.add(enemy);
+            enemies.push(enemy);
+        }
+
+        // 每2秒生成一个敌人
+        setInterval(spawnEnemy, 2000);
+
+        // 7. 射击系统 (光线投射)
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2(); // 中心点总是 (0,0)
+
+        document.addEventListener('click', function() {
+            if (!controls.isLocked) return;
+
+            // 从屏幕中心发射光线
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+
+            const intersects = raycaster.intersectObjects(enemies);
+
+            if (intersects.length > 0) {
+                const hitObject = intersects[0].object;
+                // 移除敌人
+                scene.remove(hitObject);
+                // 从数组中删除
+                const index = enemies.indexOf(hitObject);
+                if (index > -1) {
+                    enemies.splice(index, 1);
+                }
+                // 简单的击中反馈：改变背景色瞬间
+                scene.background = new THREE.Color(0xffaaaa);
+                setTimeout(() => { scene.background = new THREE.Color(0x87CEEB); }, 50);
+            }
+        });
+
+        // 8. 游戏主循环
+        let prevTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isPaused) return;
+
+            const time = performance.now();
+            if (controls.isLocked === true) {
+                const delta = (time - prevTime) / 1000;
+
+                // 摩擦力
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= 9.8 * 100.0 * delta; // 重力
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
+
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+
+                controls.getObject().position.y += (velocity.y * delta);
+
+                // 地板碰撞检测
+                if (controls.getObject().position.y < 10) {
+                    velocity.y = 0;
+                    controls.getObject().position.y = 10;
+                    canJump = true;
+                }
+
+                // 敌人简单AI：向玩家移动
+                enemies.forEach(enemy => {
+                    enemy.lookAt(camera.position);
+                    enemy.translateZ(0.2); // 移动速度
+                });
+            }
+
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // 窗口大小改变适应
+        window.addEventListener('resize', function () {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+
+<!-- 暂停菜单 -->
+<div id="pauseMenu" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 30;">
+    <div style="background: #222; border: 2px solid #555; border-radius: 10px; padding: 40px; width: 300px; text-align: center; color: white; box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);">
+        <h1>游戏暂停</h1>
+        <button onclick="resumeGame()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #4caf50; color: white; border: none; border-radius: 5px; margin: 10px;">继续游戏</button><br>
+        <button onclick="returnToGallery()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #2196f3; color: white; border: none; border-radius: 5px; margin: 10px;">返回游戏库</button><br>
+        <button onclick="toggleFullScreen()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #ff9800; color: white; border: none; border-radius: 5px; margin: 10px;">全屏模式</button>
+    </div>
+</div>
+
+<script>
+    let isPaused = false;
+
+    function stopGame() {
+        isPaused = true;
+    }
+
+    function returnToGallery() {
+        stopGame();
+        try {
+            if (window.parent && window.parent !== window && typeof window.parent.backToGallery === 'function') {
+                window.parent.backToGallery();
+                return;
+            }
+        } catch (err) {
+            console.warn('无法调用 parent.backToGallery：', err);
+        }
+        try {
+            if (window.top && window.top !== window) {
+                window.top.location.href = 'index.html#game';
+                return;
+            }
+        } catch (err) {
+            console.warn('无法调用 top.location：', err);
+        }
+        window.location.href = 'index.html#game';
+    }
+
+    function resumeGame() {
+        isPaused = false;
+        document.getElementById('pauseMenu').style.display = 'none';
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    // 添加 ESC 键监听
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            isPaused = !isPaused;
+            document.getElementById('pauseMenu').style.display = isPaused ? 'flex' : 'none';
+        }
+    });
+</script>
+</body>
+</html>

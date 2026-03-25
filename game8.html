@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>星球守护者</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0b0c10; /* 深空黑 */
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            touch-action: none;
+            color: white;
+        }
+        canvas {
+            display: block;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+        }
+        .stat {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px #45f3ff;
+        }
+        #health-bar-container {
+            width: 200px;
+            height: 20px;
+            background-color: #333;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #health-bar {
+            width: 100%;
+            height: 100%;
+            background-color: #00ffcc;
+            transition: width 0.2s;
+        }
+        #gameOverScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(11, 12, 16, 0.9);
+            padding: 40px;
+            border: 2px solid #45f3ff;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 20px #45f3ff;
+            display: none;
+        }
+        h1 { margin: 0 0 10px 0; color: #ff4757; text-shadow: 0 0 10px #ff4757; }
+        button {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 18px;
+            background: transparent;
+            color: #45f3ff;
+            border: 2px solid #45f3ff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        button:hover, button:active {
+            background: #45f3ff;
+            color: #000;
+        }
+
+        /* 暂停菜单 */
+        #pause-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #pause-menu.show {
+            display: flex;
+        }
+        #pause-menu h2 {
+            color: #fff;
+            font-size: 48px;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #pause-menu button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 24px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #pause-menu button:hover {
+            background: #45a049;
+        }
+        #pause-menu .return-btn {
+            background: #2196F3;
+        }
+        #pause-menu .return-btn:hover {
+            background: #0b7dda;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="stat">分数: <span id="score">0</span></div>
+        <div class="stat">星球护盾:</div>
+        <div id="health-bar-container">
+            <div id="health-bar"></div>
+        </div>
+    </div>
+    
+    <div id="gameOverScreen">
+        <h1>防线崩溃!</h1>
+        <p style="font-size: 20px;">击毁敌军: <span id="finalScore">0</span></p>
+        <button onclick="initGame()">重新部署防线</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- 暂停菜单 -->
+    <div id="pause-menu">
+        <h2>游戏暂停</h2>
+        <button id="resume-btn">继续游戏</button>
+        <button id="return-btn" class="return-btn">返回画廊</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const healthBarEl = document.getElementById('health-bar');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreEl = document.getElementById('finalScore');
+
+        let width, height, center;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            center = { x: width / 2, y: height / 2 };
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // 游戏核心变量
+        let score = 0;
+        let health = 100;
+        let isGameOver = false;
+        let animationId;
+        
+        let projectiles = [];
+        let enemies = [];
+        let particles = [];
+        let spawnInterval;
+        let difficultyMultiplier = 1;
+
+        // 玩家 (中心星球)
+        const planet = { radius: 40, color: '#00ffcc' };
+
+        // 鼠标/触摸位置 (用于炮台瞄准)
+        let aimPos = { x: center.x, y: center.y - 100 };
+
+        // 更新瞄准位置
+        window.addEventListener('mousemove', (e) => { aimPos = { x: e.clientX, y: e.clientY }; });
+        window.addEventListener('touchmove', (e) => { aimPos = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }, {passive: false});
+
+        // 射击功能 (计算三角函数)
+        function shoot(targetX, targetY) {
+            if (isGameOver) return;
+            const angle = Math.atan2(targetY - center.y, targetX - center.x);
+            const velocity = { x: Math.cos(angle) * 10, y: Math.sin(angle) * 10 };
+            
+            projectiles.push({
+                x: center.x + Math.cos(angle) * planet.radius,
+                y: center.y + Math.sin(angle) * planet.radius,
+                radius: 5,
+                color: '#fff',
+                velocity: velocity
+            });
+        }
+
+        window.addEventListener('mousedown', (e) => shoot(e.clientX, e.clientY));
+        window.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            shoot(e.touches[0].clientX, e.touches[0].clientY);
+        }, {passive: false});
+
+        // 生成敌人
+        function spawnEnemy() {
+            const radius = Math.random() * 15 + 15;
+            let x, y;
+            
+            // 从屏幕外边缘随机生成
+            if (Math.random() < 0.5) {
+                x = Math.random() < 0.5 ? 0 - radius : width + radius;
+                y = Math.random() * height;
+            } else {
+                x = Math.random() * width;
+                y = Math.random() < 0.5 ? 0 - radius : height + radius;
+            }
+
+            const angle = Math.atan2(center.y - y, center.x - x);
+            const speed = (Math.random() * 1.5 + 0.5) * difficultyMultiplier;
+            const velocity = { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed };
+
+            enemies.push({
+                x: x, y: y, radius: radius,
+                color: `hsl(${Math.random() * 360}, 70%, 50%)`, // 随机鲜艳颜色
+                velocity: velocity,
+                emoji: Math.random() > 0.5 ? '☄️' : '👾'
+            });
+        }
+
+        // 生成爆炸粒子特效
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: x, y: y,
+                    radius: Math.random() * 3 + 1,
+                    color: color,
+                    velocity: {
+                        x: (Math.random() - 0.5) * (Math.random() * 6),
+                        y: (Math.random() - 0.5) * (Math.random() * 6)
+                    },
+                    alpha: 1 // 透明度
+                });
+            }
+        }
+
+        // 初始化/重置游戏
+        function initGame() {
+            score = 0;
+            health = 100;
+            difficultyMultiplier = 1;
+            isGameOver = false;
+            projectiles = [];
+            enemies = [];
+            particles = [];
+            
+            scoreEl.innerText = score;
+            healthBarEl.style.width = health + '%';
+            healthBarEl.style.backgroundColor = '#00ffcc';
+            gameOverScreen.style.display = 'none';
+            
+            if (spawnInterval) clearInterval(spawnInterval);
+            spawnInterval = setInterval(spawnEnemy, 1200);
+            
+            cancelAnimationFrame(animationId);
+            gameLoop();
+        }
+
+        // 游戏主循环
+        function gameLoop() {
+            if (isGameOver) return;
+            animationId = requestAnimationFrame(gameLoop);
+
+            // 绘制带拖影的背景
+            ctx.fillStyle = 'rgba(11, 12, 16, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            // 画星球 (中心)
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, planet.radius, 0, Math.PI * 2);
+            ctx.fillStyle = planet.color;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = planet.color;
+            ctx.fill();
+            ctx.shadowBlur = 0; // 重置阴影
+
+            // 画炮管 (瞄准指示器)
+            const aimAngle = Math.atan2(aimPos.y - center.y, aimPos.x - center.x);
+            ctx.beginPath();
+            ctx.moveTo(center.x, center.y);
+            ctx.lineTo(center.x + Math.cos(aimAngle) * (planet.radius + 20), 
+                       center.y + Math.sin(aimAngle) * (planet.radius + 20));
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // 更新和绘制粒子 (爆炸特效)
+            particles.forEach((particle, index) => {
+                if (particle.alpha <= 0) {
+                    particles.splice(index, 1);
+                } else {
+                    particle.velocity.x *= 0.98; // 摩擦力
+                    particle.velocity.y *= 0.98;
+                    particle.x += particle.velocity.x;
+                    particle.y += particle.velocity.y;
+                    particle.alpha -= 0.02; // 淡出
+
+                    ctx.save();
+                    ctx.globalAlpha = particle.alpha;
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = particle.color;
+                    ctx.fill();
+                    ctx.restore();
+                }
+            });
+
+            // 更新和绘制子弹
+            projectiles.forEach((p, pIndex) => {
+                p.x += p.velocity.x;
+                p.y += p.velocity.y;
+
+                // 移除出界的子弹
+                if (p.x < 0 || p.x > width || p.y < 0 || p.y > height) {
+                    projectiles.splice(pIndex, 1);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                }
+            });
+
+            // 更新和绘制敌人
+            enemies.forEach((enemy, eIndex) => {
+                enemy.x += enemy.velocity.x;
+                enemy.y += enemy.velocity.y;
+
+                // 绘制敌人
+                ctx.font = `${enemy.radius * 2}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(enemy.emoji, enemy.x, enemy.y);
+
+                // 检测敌人与星球碰撞
+                const distToCenter = Math.hypot(center.x - enemy.x, center.y - enemy.y);
+                if (distToCenter - enemy.radius - planet.radius < 0) {
+                    enemies.splice(eIndex, 1);
+                    health -= 20; // 扣血
+                    healthBarEl.style.width = Math.max(0, health) + '%';
+                    
+                    // 屏幕震动效果模拟 (星球闪红)
+                    planet.color = '#ff4757';
+                    setTimeout(() => planet.color = '#00ffcc', 150);
+
+                    if (health <= 30) healthBarEl.style.backgroundColor = '#ff4757';
+
+                    if (health <= 0) {
+                        isGameOver = true;
+                        finalScoreEl.innerText = score;
+                        gameOverScreen.style.display = 'block';
+                        clearInterval(spawnInterval);
+                    }
+                }
+
+                // 检测子弹与敌人碰撞
+                projectiles.forEach((p, pIndex) => {
+                    const distToEnemy = Math.hypot(p.x - enemy.x, p.y - enemy.y);
+                    if (distToEnemy - enemy.radius - p.radius < 0) {
+                        // 触发爆炸粒子
+                        createParticles(enemy.x, enemy.y, enemy.color);
+                        
+                        // 移除敌人和子弹
+                        setTimeout(() => {
+                            enemies.splice(eIndex, 1);
+                            projectiles.splice(pIndex, 1);
+                        }, 0);
+
+                        // 加分和难度增加
+                        score += 10;
+                        scoreEl.innerText = score;
+                        if (score % 100 === 0) {
+                            difficultyMultiplier += 0.15; // 提高敌人速度
+                            clearInterval(spawnInterval);
+                            spawnInterval = setInterval(spawnEnemy, Math.max(400, 1200 - (score/2))); // 加快生成频率
+                        }
+                    }
+                });
+            });
+        }
+
+        // 启动
+        initGame();
+    </script>
+
+<!-- 暂停菜单 -->
+<div id="pauseMenu" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 30;">
+    <div style="background: #222; border: 2px solid #555; border-radius: 10px; padding: 40px; width: 300px; text-align: center; color: white; box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);">
+        <h1>游戏暂停</h1>
+        <button onclick="resumeGame()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #4caf50; color: white; border: none; border-radius: 5px; margin: 10px;">继续游戏</button><br>
+        <button onclick="returnToGallery()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #2196f3; color: white; border: none; border-radius: 5px; margin: 10px;">返回游戏库</button><br>
+        <button onclick="toggleFullScreen()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #ff9800; color: white; border: none; border-radius: 5px; margin: 10px;">全屏模式</button>
+    </div>
+</div>
+
+<script>
+    let isPaused = false;
+
+    function stopGame() {
+        isPaused = true;
+    }
+
+    function returnToGallery() {
+        stopGame();
+        // 优先使用父窗口的 backToGallery 函数（iframe 场景）
+        if (window.parent && window.parent.backToGallery) {
+            window.parent.backToGallery();
+        } else if (window.parent && window.parent.location) {
+            window.parent.location.href = 'index.html';
+        } else if (window.top && window.top.location) {
+            window.top.location.href = 'index.html';
+        } else {
+            window.location.href = 'index.html';
+        }
+    }
+
+    function resumeGame() {
+        isPaused = false;
+        document.getElementById('pauseMenu').style.display = 'none';
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    // 添加 ESC 键监听
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            isPaused = !isPaused;
+            document.getElementById('pauseMenu').style.display = isPaused ? 'flex' : 'none';
+        }
+    });
+</script>
+</body>
+</html>

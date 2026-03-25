@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>个人量化决策助手 | 专属财务仪表板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            font-family: 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding: 20px;
+            color: #334155;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 1rem;
+            text-align: center;
+            font-weight: 400;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.75rem;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        /* 资金卡片内部 */
+        .fund-item {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            transition: all 0.2s ease;
+        }
+
+        .fund-item:hover {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            transform: translateY(-1px);
+        }
+
+        .fund-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.95rem;
+        }
+
+        .metric-item {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
+        }
+
+        .metric-item:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 8px;
+        }
+
+        .edit-input {
+            width: 120px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            background: #ffffff;
+            color: #1e293b;
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .edit-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+        }
+
+        button.secondary {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        button.small {
+            padding: 6px 14px;
+            font-size: 0.85rem;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        button.secondary:hover {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+
+        .input-group input, .input-group select {
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            background: #ffffff;
+            color: #1e293b;
+            flex: 1;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #bae6fd;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 16px;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+        }
+
+        .result-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #cbd5e6;
+        }
+
+        .badge {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            color: #166534;
+            border: 1px solid #86efac;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .warning {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border-color: #fbbf24;
+        }
+
+        .safe {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            color: #166534;
+            border-color: #86efac;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 12px;
+            }
+            .fund-value {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>⚕️ 个人财务管理仪表板</h1>
+        <p>基于量化策略的专属财务规划工具 · 数据本地存储</p>
+    </div>
+    <!-- 关键指标总览 -->
+    <div class="card">
+        <div class="card-title">📊 关键指标总览</div>
+        <div class="grid-2col" style="gap: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="metric-item">
+                    <div class="metric-label">💰 月收入</div>
+                    <div class="metric-value" id="monthlyIncome">5400.00</div>
+                    <button class="small secondary" onclick="editMonthlyIncome()">修改</button>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-label">🎯 可分配金额</div>
+                    <div class="metric-value" id="availableAmount">4488.00</div>
+                    <div style="font-size: 0.8rem; color: #64748b;">月收入 - 固定支出</div>
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="metric-item">
+                    <div class="metric-label">🏦 总资产</div>
+                    <div class="metric-value" id="totalAssets">42188.00</div>
+                    <div style="font-size: 0.8rem; color: #64748b;">流动资金总和</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-label">🛡️ 心理安全底线</div>
+                    <div class="metric-value" id="safetyThreshold">30000.00</div>
+                    <button class="small secondary" onclick="editSafetyThreshold()">修改</button>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 20px; padding: 16px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; border: 1px solid #bae6fd;">
+            <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">📈 储蓄目标规划</div>
+            <div id="savingsGoals" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 0.9rem;">
+                <!-- 动态生成的目标 -->
+            </div>
+        </div>
+    </div>
+    <!-- 资金总览卡片 -->
+    <div class="card">
+        <div class="card-title">💰 资产配置总览</div>
+        <div class="grid-2col">
+            <div>
+                <div class="fund-item">
+                    <span class="fund-label">🏦 总储备金</span>
+                    <span class="fund-value" id="totalCapital">0.00</span>
+                    <span style="font-size:0.7rem;">元</span>
+                </div>
+                <div class="fund-item">
+                    <span class="fund-label">🛡️ 核心储备（底线）</span>
+                    <span class="fund-value" id="coreReserve">0.00</span>
+                    <button class="small secondary" onclick="editCoreReserve()">修改</button>
+                </div>
+                <div class="fund-item">
+                    <span class="fund-label">⚡ 投资机动资金</span>
+                    <span class="fund-value" id="investmentFund">0.00</span>
+                    <button class="small secondary" onclick="editInvestmentFund()">修改</button>
+                </div>
+                <div class="fund-item">
+                    <span class="fund-label">🆘 应急备用金</span>
+                    <span class="fund-value" id="emergencyFund">0.00</span>
+                    <button class="small secondary" onclick="editEmergencyFund()">修改</button>
+                </div>
+                <div class="fund-item">
+                    <span class="fund-label">🎁 犒劳基金（本月剩余）</span>
+                    <span class="fund-value" id="rewardFund">0.00</span>
+                    <button class="small secondary" onclick="editRewardFund()">修改</button>
+                </div>
+                <div class="fund-item">
+                    <span class="fund-label">⚠️ 高风险资产（如黄金/个股）</span>
+                    <span class="fund-value" id="highRiskAsset">0.00</span>
+                    <button class="small secondary" onclick="editHighRisk()">修改</button>
+                </div>
+            </div>
+            <div>
+                <div class="result-box">
+                    <div style="font-weight:600; margin-bottom:8px; color:#1e293b;">📐 心理安全垫</div>
+                    <div class="result-line" style="color:#334155;">
+                        <span>真实安全底线：</span>
+                        <span><strong id="safeCushion" style="color:#0f172a;">0.00</strong> 元</span>
+                    </div>
+                    <div class="result-line" style="color:#334155;">
+                        <span>核心储备状态：</span>
+                        <span id="coreStatus" class="badge">—</span>
+                    </div>
+                    <div class="result-line" style="color:#334155;">
+                        <span>投资机动占比：</span>
+                        <span id="investRatio" style="color:#0f172a;">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 12px; text-align: right;">
+            <button onclick="syncAllFunds()" style="background:#4bbe08;">🔄 同步更新总资金</button>
+        </div>
+    </div>
+
+    <!-- 工具区：新资金分配 + 消费评估 + 浮亏评估 两列布局 -->
+    <div class="grid-2col">
+        <!-- 新资金分配工具 -->
+        <div class="card">
+            <div class="card-title">💸 资金分配规划 · 量化策略</div>
+            <div class="input-group">
+                <input type="number" id="newCash" placeholder="输入到账金额 (例如 7400)" step="0.01">
+                <button onclick="allocateNewCash()">分配</button>
+            </div>
+            <div id="allocationResult" class="result-box" style="display:none;">
+                <div style="font-weight:500; color:#1e293b;">✨ 推荐分配方案</div>
+                <div id="allocationDetails"></div>
+                <div style="margin-top:12px; font-size:0.8rem; color:#64748b;">✅ 点击下方「应用至资金池」即可一键更新</div>
+                <button id="applyAllocationBtn" class="small" style="margin-top:12px; background:#17f700;" onclick="applyAllocation()">📥 应用至资金池</button>
+            </div>
+            <div style="margin-top:12px;">
+                <label style="font-size:0.8rem; color:#64748b;">⚙️ 分配比例 (可自定义)</label>
+                <div class="grid-2col" style="gap:10px; margin-top:8px;">
+                    <div>🎁 犒劳: <input type="number" id="ratioReward" step="1" value="5" style="width:60px;"> %</div>
+                    <div>🆘 应急: <input type="number" id="ratioEmergency" step="1" value="15" style="width:60px;"> %</div>
+                    <div>🛡️ 核心: <input type="number" id="ratioCore" step="1" value="55" style="width:60px;"> %</div>
+                    <div>⚡ 投资机动: <input type="number" id="ratioInvest" step="1" value="25" style="width:60px;"> %</div>
+                </div>
+                <button class="secondary small" onclick="saveRatioPreset()" style="margin-top:8px;">保存比例预设</button>
+            </div>
+        </div>
+
+        <!-- 消费冲动评估 + 亏损承受力 合并卡片 -->
+        <div class="card">
+            <div class="card-title">🧠 风险评估仪表</div>
+            <div style="margin-bottom: 24px;">
+                <div style="font-weight:500; color:#1e293b;">🍔 消费冲动评估 (公式一)</div>
+                <div class="input-group">
+                    <input type="number" id="consumeAmount" placeholder="想消费的金额 (元)">
+                    <button onclick="evaluateConsume()">评估</button>
+                </div>
+                <div id="consumeResult" class="result-box" style="display:none;"></div>
+            </div>
+            <div>
+                <div style="font-weight:500; color:#1e293b;">📉 浮亏承受力评估 (公式二)</div>
+                <div class="input-group">
+                    <input type="number" id="lossAmount" placeholder="当前浮亏金额 (元)">
+                    <button onclick="evaluateLoss()">评估</button>
+                </div>
+                <div id="lossResult" class="result-box" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 左侧仓位 & 市场情绪工具 -->
+    <div class="grid-2col">
+        <div class="card">
+            <div class="card-title">🎯 仓位管理策略 (公式五)</div>
+            <div class="input-group">
+                <span style="color:#475569;">市场情绪分 (0=极冷清 → 1=极狂热)</span>
+                <input type="range" id="sentimentSlider" min="0" max="1" step="0.01" value="0.6">
+                <span id="sentimentValue" style="color:#3b82f6;">0.60</span>
+            </div>
+            <div id="positionResult" class="result-box">
+                <div class="result-line">当前投资机动资金：<strong id="currentInvestCap" style="color:#0f172a;">0</strong> 元</div>
+                <div class="result-line">建议左侧建仓金额：<strong id="suggestPosition" style="color:#0f172a;">0</strong> 元</div>
+                <div class="result-line">剩余机动备用：<strong id="remainingInvest" style="color:#0f172a;">0</strong> 元</div>
+                <div style="margin-top:8px; font-size:0.75rem; color:#64748b;">*根据情绪分动态计算，左侧建仓 = 机动资金 × (1-情绪分)</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📈 资产变动记录</div>
+            <div id="historyLog" style="max-height: 200px; overflow-y: auto;">
+                <div style="color:#ccc;">暂无记录，更新资金后自动记录</div>
+            </div>
+            <button class="secondary small" onclick="clearHistory()" style="margin-top:8px;">清空历史</button>
+        </div>
+    </div>
+
+    <footer>
+        💡 所有数据存储在本地浏览器中，页面刷新不会丢失。调整分配比例后请保存预设，新资金将按策略自动分配。
+    </footer>
+</div>
+
+<script>
+    // ---------- 初始化数据结构 ----------
+    let financeData = {
+        totalCapital: 42188,     // 根据聊天记录初始约4.2w
+        coreReserve: 29718,
+        investmentFund: 2000,    // 预留投资机动
+        emergencyFund: 3000,
+        rewardFund: 200,
+        highRiskAsset: 2000,
+        monthlyIncome: 5400,    // 月收入
+        fixedExpenses: 912,     // 固定支出（房租）
+        safetyThreshold: 30000, // 心理安全底线
+        ratio: { reward:5, emergency:15, core:55, invest:25 },
+        history: []              // 存储历史变动
+    };
+
+    // 加载本地存储
+    function loadData() {
+        const saved = localStorage.getItem('quantFinanceData');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                Object.assign(financeData, parsed);
+                // 确保历史数组存在
+                if (!financeData.history) financeData.history = [];
+            } catch(e) {}
+        }
+        // 同步显示
+        updateAllDisplay();
+        updateHistoryUI();
+        updatePositionTool();
+    }
+
+    // 保存全部数据
+    function saveData() {
+        localStorage.setItem('quantFinanceData', JSON.stringify(financeData));
+        updateHistoryUI();
+    }
+
+    // 添加一条历史记录
+    function addHistory(action, changeDetail) {
+        const time = new Date().toLocaleString();
+        financeData.history.unshift({ time, action, detail: changeDetail });
+        if (financeData.history.length > 5) financeData.history.pop();
+        saveData();
+        updateHistoryUI();
+        
+        // 发送资金更新到后端
+        sendFinanceUpdate(action, changeDetail);
+    }
+
+    // 更新所有UI资金显示
+    function updateAllDisplay() {
+        document.getElementById('totalCapital').innerText = financeData.totalCapital.toFixed(2);
+        document.getElementById('coreReserve').innerText = financeData.coreReserve.toFixed(2);
+        document.getElementById('investmentFund').innerText = financeData.investmentFund.toFixed(2);
+        document.getElementById('emergencyFund').innerText = financeData.emergencyFund.toFixed(2);
+        document.getElementById('rewardFund').innerText = financeData.rewardFund.toFixed(2);
+        document.getElementById('highRiskAsset').innerText = financeData.highRiskAsset.toFixed(2);
+
+        // 更新关键指标
+        document.getElementById('monthlyIncome').innerText = financeData.monthlyIncome.toFixed(2);
+        document.getElementById('availableAmount').innerText = (financeData.monthlyIncome - financeData.fixedExpenses).toFixed(2);
+        document.getElementById('totalAssets').innerText = financeData.totalCapital.toFixed(2);
+        document.getElementById('safetyThreshold').innerText = financeData.safetyThreshold.toFixed(2);
+
+        // 安全垫计算
+        const safeCushion = financeData.totalCapital - financeData.highRiskAsset;
+        document.getElementById('safeCushion').innerText = safeCushion.toFixed(2);
+        // 核心储备状态
+        const coreStatusSpan = document.getElementById('coreStatus');
+        if (financeData.coreReserve >= financeData.safetyThreshold) {
+            coreStatusSpan.innerHTML = '✅ 安全 (≥' + financeData.safetyThreshold.toFixed(0) + ')';
+            coreStatusSpan.className = 'badge safe';
+        } else {
+            coreStatusSpan.innerHTML = '⚠️ 低于心理防线' + financeData.safetyThreshold.toFixed(0);
+            coreStatusSpan.className = 'badge warning';
+        }
+        // 投资机动占比
+        const ratioInvest = (financeData.investmentFund / financeData.totalCapital * 100).toFixed(1);
+        document.getElementById('investRatio').innerText = `${ratioInvest}%`;
+
+        // 生成储蓄目标规划
+        generateSavingsGoals();
+
+        // 更新左侧仓位的实时数据
+        updatePositionTool();
+    }
+
+    // 生成储蓄目标规划
+    function generateSavingsGoals() {
+        const monthlySavings = financeData.monthlyIncome - financeData.fixedExpenses;
+        const container = document.getElementById('savingsGoals');
+
+        // 基于科学的储蓄目标规划
+        const goals = [
+            { amount: 60000, label: '6个月应急金', months: Math.ceil(60000 / monthlySavings), priority: '高' },
+            { amount: 100000, label: '1年家庭保障', months: Math.ceil(100000 / monthlySavings), priority: '高' },
+            { amount: 200000, label: '购房首付目标', months: Math.ceil(200000 / monthlySavings), priority: '中' },
+            { amount: 500000, label: '财务自由起点', months: Math.ceil(500000 / monthlySavings), priority: '低' }
+        ];
+
+        let html = '';
+        goals.forEach(goal => {
+            const progress = Math.min((financeData.totalCapital / goal.amount) * 100, 100);
+            const priorityColor = goal.priority === '高' ? '#dc2626' : goal.priority === '中' ? '#d97706' : '#059669';
+            html += `
+                <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">${goal.label}</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 4px;">¥${goal.amount.toLocaleString()}</div>
+                    <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 8px;">约 ${goal.months} 个月达成</div>
+                    <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${progress}%; height: 100%; background: ${priorityColor}; border-radius: 3px; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">进度: ${progress.toFixed(1)}%</div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function updatePositionTool() {
+        document.getElementById('currentInvestCap').innerText = financeData.investmentFund.toFixed(2);
+        const sentiment = parseFloat(document.getElementById('sentimentSlider').value);
+        const suggest = financeData.investmentFund * (1 - sentiment);
+        document.getElementById('suggestPosition').innerText = suggest.toFixed(2);
+        const remaining = financeData.investmentFund - suggest;
+        document.getElementById('remainingInvest').innerText = remaining > 0 ? remaining.toFixed(2) : '0.00';
+    }
+
+    function updateHistoryUI() {
+        const container = document.getElementById('historyLog');
+        if (!financeData.history.length) {
+            container.innerHTML = '<div style="color:#64748b;">暂无记录，更新资金后自动记录</div>';
+            return;
+        }
+        let html = '';
+        financeData.history.forEach(item => {
+            html += `<div style="border-bottom:1px solid #e2e8f0; padding:8px 0;">
+                        <div><strong>${item.time}</strong> · ${item.action}</div>
+                        <div style="font-size:0.75rem; color:#64748b;">${item.detail}</div>
+                     </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    // 编辑各项资金 (通用)
+    function editField(field, label) {
+        let newVal = prompt(`请输入新的${label}金额 (元):`, financeData[field]);
+        if (newVal !== null && !isNaN(parseFloat(newVal))) {
+            const num = parseFloat(newVal);
+            financeData[field] = num;
+            // 如果编辑的是核心/机动/应急/犒劳，可能需要重新计算总资本
+            recalcTotalCapital();
+            saveData();
+            updateAllDisplay();
+            addHistory('手动修改', `${label} 变更为 ${num.toFixed(2)} 元`);
+        }
+    }
+
+    function recalcTotalCapital() {
+        // 总资本 = 核心+机动+应急+犒劳（犒劳也算在流动资金内）+ 其他? 为了简洁，我们让用户同步时自动计算
+        // 但编辑单项后最好重新求和，避免总资金错位
+        const newTotal = financeData.coreReserve + financeData.investmentFund + financeData.emergencyFund + financeData.rewardFund;
+        financeData.totalCapital = newTotal;
+    }
+
+    window.editCoreReserve = () => editField('coreReserve', '核心储备');
+    window.editInvestmentFund = () => editField('investmentFund', '投资机动资金');
+    window.editEmergencyFund = () => editField('emergencyFund', '应急备用金');
+    window.editRewardFund = () => editField('rewardFund', '犒劳基金');
+    window.editHighRisk = () => editField('highRiskAsset', '高风险资产');
+
+    // 编辑月收入
+    window.editMonthlyIncome = () => {
+        let newVal = prompt(`请输入新的月收入金额 (元):`, financeData.monthlyIncome);
+        if (newVal !== null && !isNaN(parseFloat(newVal))) {
+            const num = parseFloat(newVal);
+            financeData.monthlyIncome = num;
+            saveData();
+            updateAllDisplay();
+            addHistory('修改收入', `月收入变更为 ${num.toFixed(2)} 元`);
+        }
+    };
+
+    // 编辑心理安全底线
+    window.editSafetyThreshold = () => {
+        let newVal = prompt(`请输入新的心理安全底线金额 (元):`, financeData.safetyThreshold);
+        if (newVal !== null && !isNaN(parseFloat(newVal))) {
+            const num = parseFloat(newVal);
+            financeData.safetyThreshold = num;
+            saveData();
+            updateAllDisplay();
+            addHistory('修改底线', `心理安全底线变更为 ${num.toFixed(2)} 元`);
+        }
+    };
+
+    window.syncAllFunds = () => {
+        const total = financeData.coreReserve + financeData.investmentFund + financeData.emergencyFund + financeData.rewardFund;
+        financeData.totalCapital = total;
+        saveData();
+        updateAllDisplay();
+        addHistory('同步资金', `总储备更新为 ${total.toFixed(2)} 元`);
+    };
+
+    // 新资金分配
+    window.allocateNewCash = () => {
+        const newCash = parseFloat(document.getElementById('newCash').value);
+        if (isNaN(newCash) || newCash <= 0) {
+            alert('请输入有效的到账金额');
+            return;
+        }
+        const ratio = {
+            reward: parseFloat(document.getElementById('ratioReward').value) / 100,
+            emergency: parseFloat(document.getElementById('ratioEmergency').value) / 100,
+            core: parseFloat(document.getElementById('ratioCore').value) / 100,
+            invest: parseFloat(document.getElementById('ratioInvest').value) / 100
+        };
+        const sum = ratio.reward + ratio.emergency + ratio.core + ratio.invest;
+        if (Math.abs(sum - 1) > 0.01) {
+            alert(`比例之和应为100%，当前${(sum*100).toFixed(1)}%`);
+            return;
+        }
+        const rewardAmt = newCash * ratio.reward;
+        const emergencyAmt = newCash * ratio.emergency;
+        const coreAmt = newCash * ratio.core;
+        const investAmt = newCash * ratio.invest;
+
+        const detailsDiv = document.getElementById('allocationDetails');
+        detailsDiv.innerHTML = `
+            <div class="result-line">🎁 犒劳基金: <strong>${rewardAmt.toFixed(2)}</strong> 元</div>
+            <div class="result-line">🆘 应急备用金: <strong>${emergencyAmt.toFixed(2)}</strong> 元</div>
+            <div class="result-line">🛡️ 核心储备: <strong>${coreAmt.toFixed(2)}</strong> 元</div>
+            <div class="result-line">⚡ 投资机动: <strong>${investAmt.toFixed(2)}</strong> 元</div>
+        `;
+        document.getElementById('allocationResult').style.display = 'block';
+        // 暂存分配结果用于应用
+        window.pendingAllocation = { rewardAmt, emergencyAmt, coreAmt, investAmt, newCash };
+    };
+
+    window.applyAllocation = () => {
+        if (!window.pendingAllocation) return;
+        const { rewardAmt, emergencyAmt, coreAmt, investAmt, newCash } = window.pendingAllocation;
+        financeData.rewardFund += rewardAmt;
+        financeData.emergencyFund += emergencyAmt;
+        financeData.coreReserve += coreAmt;
+        financeData.investmentFund += investAmt;
+        financeData.totalCapital += newCash;
+        saveData();
+        updateAllDisplay();
+        addHistory('新资金分配', `到账 ${newCash.toFixed(2)} 元，按比例分配完成`);
+        document.getElementById('allocationResult').style.display = 'none';
+        document.getElementById('newCash').value = '';
+        window.pendingAllocation = null;
+    };
+
+    window.saveRatioPreset = () => {
+        const ratio = {
+            reward: parseFloat(document.getElementById('ratioReward').value),
+            emergency: parseFloat(document.getElementById('ratioEmergency').value),
+            core: parseFloat(document.getElementById('ratioCore').value),
+            invest: parseFloat(document.getElementById('ratioInvest').value)
+        };
+        financeData.ratio = ratio;
+        saveData();
+        alert('比例已保存至本地');
+    };
+
+    // 消费评估
+    window.evaluateConsume = () => {
+        const amount = parseFloat(document.getElementById('consumeAmount').value);
+        if (isNaN(amount) || amount <= 0) {
+            alert('请输入有效金额');
+            return;
+        }
+        const percent = (amount / financeData.totalCapital) * 100;
+        let suggestion = '';
+        if (percent <= 0.5) suggestion = '✅ 放心花，对财务几乎没有影响，犒劳自己吧！';
+        else if (percent <= 2) suggestion = '👍 可以花，建议从“犒劳基金”中支出，不影响核心储备。';
+        else suggestion = '⚠️ 占比超过2%，建议冷静24小时或拆分为多次犒劳。';
+        const resultDiv = document.getElementById('consumeResult');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `
+            <div class="result-line" style="color:#334155;">消费金额: ${amount.toFixed(2)} 元</div>
+            <div class="result-line" style="color:#334155;">占总储备: ${percent.toFixed(2)}%</div>
+            <div class="result-line" style="color:#334155;">建议: ${suggestion}</div>
+            <div style="color:#64748b;">🎯 当前犒劳基金余额: ${financeData.rewardFund.toFixed(2)} 元</div>
+        `;
+    };
+
+    // 浮亏评估
+    window.evaluateLoss = () => {
+        const loss = parseFloat(document.getElementById('lossAmount').value);
+        if (isNaN(loss) || loss < 0) {
+            alert('请输入有效浮亏金额');
+            return;
+        }
+        const percent = (loss / financeData.totalCapital) * 100;
+        let suggestion = '';
+        if (percent <= 3) suggestion = '🟢 正常波动，无需操作，保持耐心。';
+        else if (percent <= 10) suggestion = '🟡 关注但不恐慌，评估是否调整配置。';
+        else suggestion = '🔴 亏损较大，建议重新审视风险暴露，必要时止损或调仓。';
+        const resultDiv = document.getElementById('lossResult');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `
+            <div class="result-line" style="color:#334155;">浮亏金额: ${loss.toFixed(2)} 元</div>
+            <div class="result-line" style="color:#334155;">占总储备: ${percent.toFixed(2)}%</div>
+            <div class="result-line" style="color:#334155;">评级: ${suggestion}</div>
+        `;
+    };
+
+    // 左侧仓位滑块联动
+    const slider = document.getElementById('sentimentSlider');
+    const sentimentSpan = document.getElementById('sentimentValue');
+    slider.addEventListener('input', () => {
+        sentimentSpan.innerText = slider.value;
+        updatePositionTool();
+    });
+
+    window.clearHistory = () => {
+        financeData.history = [];
+        saveData();
+        updateHistoryUI();
+        addHistory('清空历史', '手动清空记录');
+    };
+
+    // 初始化加载比例预设
+    function loadRatioUI() {
+        if (financeData.ratio) {
+            document.getElementById('ratioReward').value = financeData.ratio.reward;
+            document.getElementById('ratioEmergency').value = financeData.ratio.emergency;
+            document.getElementById('ratioCore').value = financeData.ratio.core;
+            document.getElementById('ratioInvest').value = financeData.ratio.invest;
+        }
+    }
+
+    // 发送资金更新到后端
+    async function sendFinanceUpdate(entryName, amount) {
+        try {
+            const response = await fetch('http://localhost:3000/api/finance-updates', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ entry_name: entryName, amount: parseFloat(amount) }),
+            });
+            const result = await response.json();
+            console.log('Finance update sent:', result);
+        } catch (error) {
+            console.error('Error sending finance update:', error);
+        }
+    }
+
+    // 启动
+    loadData();
+    loadRatioUI();
+    updatePositionTool();
+</script>
+</body>
+</html>

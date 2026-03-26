@@ -760,13 +760,13 @@
             <h2 style="color:#fff; font-size: 2rem; margin-bottom: 2rem;">//leave_message</h2>
             <form id="messageForm">
                 <div style="margin-bottom: 1rem;">
-                    <input type="text" id="msgName" placeholder="您的名字" required style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px;">
+                    <input type="text" id="msgNameContact" placeholder="您的名字" required style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px;">
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <input type="text" id="msgNickname" placeholder="昵称（可选）" style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px;">
                 </div>
                 <div style="margin-bottom: 1rem;">
-                    <textarea id="msgContent" placeholder="留言内容" required style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px; min-height: 100px; resize: vertical;"></textarea>
+                    <textarea id="msg2Contact" placeholder="留言内容" required style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px; min-height: 100px; resize: vertical;"></textarea>
                 </div>
                 <button type="submit" style="background: #17f700; color: #0d1117; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: bold;">发送留言</button>
             </form>
@@ -1440,9 +1440,9 @@
     });
 
     async function submitMessage() {
-        const name = document.getElementById('msgName').value;
+        const name = document.getElementById('msgNameContact').value;
         const nickname = document.getElementById('msgNickname').value;
-        const message = document.getElementById('msgContent').value;
+        const message = document.getElementById('msg2Contact').value;
         
         try {
             //const response = await fetch('/api/messages', {

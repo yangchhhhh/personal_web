@@ -1445,7 +1445,8 @@
         const message = document.getElementById('msgContent').value;
         
         try {
-            const response = await fetch('/api/messages', {
+            //const response = await fetch('/api/messages', {
+            const response = await fetch(`${ETF_BACKEND_API}/api/messages`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1465,7 +1466,8 @@
 
     async function loadMessages() {
         try {
-            const response = await fetch('/api/messages');
+            //const response = await fetch('/api/messages');
+            const response = await fetch(`${ETF_BACKEND_API}/api/messages`);
             const data = await response.json();
             const container = document.getElementById('messagesContainer');
             container.innerHTML = '';

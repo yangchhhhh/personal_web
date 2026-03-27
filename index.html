@@ -188,7 +188,7 @@
         }
         .poker-container {
             position: relative;
-            width: 45rem;
+            width: 55rem;
             height: 35rem;
         }
         .poker {
@@ -668,6 +668,187 @@
                 width: 260px;
             }
         }
+        /* ========== 回忆录页面 (温馨风格) ========== */
+        #page-memory {
+            background: linear-gradient(145deg, #fff9ef 0%, #fff1e0 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        .memory-header {
+            text-align: center;
+            padding: 3rem 1rem 1rem;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+        }
+        .memory-header h1 {
+            font-size: 3.5rem;
+            color: #c45c2c;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.05);
+            letter-spacing: 2px;
+        }
+        .memory-header p {
+            font-size: 1.2rem;
+            color: #b97f5a;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+        .scroll-control {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .scroll-control button {
+            background: #d48c54;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: monospace;
+        }
+        .scroll-control button:hover {
+            background: #b45a2c;
+        }
+        .memory-gallery-wrapper {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            padding: 2rem 0 4rem;
+            cursor: grab;
+        }
+        .memory-gallery-wrapper:active {
+            cursor: grabbing;
+        }
+        .memory-scroll-container {
+            display: flex;
+            gap: 2rem;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding: 1rem 2rem;
+            scrollbar-width: none;
+            transition: all 0.2s;
+        }
+        .memory-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        .memory-card {
+            flex: 0 0 auto;
+            width: 320px;
+            background: #ffffffdd;
+            backdrop-filter: blur(4px);
+            border-radius: 32px;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 215, 170, 0.6);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            transform: scale(1);
+        }
+        .memory-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 0 30px 45px -12px rgba(0, 0, 0, 0.25);
+            background: #fff;
+        }
+        .card-media {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.5s;
+        }
+        .memory-card:hover .card-media {
+            transform: scale(1.03);
+        }
+        .card-info {
+            padding: 1.5rem;
+            background: rgba(255, 248, 235, 0.95);
+        }
+        .card-date {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #c45c2c;
+            margin-bottom: 0.5rem;
+            font-family: monospace;
+        }
+        .card-title {
+            font-size: 1rem;
+            color: #5a3e2b;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+        .memory-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            font-family: system-ui, 'Courier New', monospace;
+        }
+        .memory-modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #fffef7;
+            border-radius: 2rem;
+            max-width: 500px;
+            width: 85%;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 30px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid #ffcd94;
+            animation: fadeUp 0.3s ease;
+        }
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .modal-content img {
+            width: 100%;
+            max-height: 260px;
+            object-fit: cover;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            border: 2px solid #ffcd94;
+        }
+        .modal-content h3 {
+            font-size: 2rem;
+            color: #b45a2c;
+            margin-bottom: 0.75rem;
+        }
+        .modal-content p {
+            font-size: 1.1rem;
+            color: #4f3a28;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+        .modal-close {
+            background: #d48c54;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .modal-close:hover {
+            background: #b45a2c;
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body>
@@ -700,6 +881,7 @@
                 <div class="poker" data-page="contact" style="background:#D0021B;"><h2 style="color:#fff">联系方式</h2></div>
                 <div class="poker" data-page="finance" style="background:#10b981;"><h2 style="color:#fff">量化投资</h2></div>
                 <div class="poker" data-page="game" style="background:#17f700;"><h2 style="color:#0d1117">个人游戏</h2></div>
+                <div class="poker" data-page="memory" style="background:#ffb347;"><h2 style="color:#4a2a1a">温馨回忆录</h2></div>
                 <div class="poker_top" id="pokerTopClick"></div>
             </div>
             <button class="enter-btn" id="enterCommandBtn">执行指令 : 个人游戏</button>
@@ -824,6 +1006,21 @@
     <iframe src="Investment and Finance Management & Money Planning.html" style="width:100%; height:100vh; border:none;"></iframe>
 </div>
 
+<!-- ========================= 回忆录页面 memory ========================= -->
+<div id="page-memory" class="page">
+    <div class="memory-header">
+        <h1>📖 时光手札 · 温暖回忆录</h1>
+        <p>每一帧都是生命里发光的瞬间，点击卡片重温美好</p>
+    </div>
+    <div class="scroll-control">
+        <button id="pauseScrollBtn">⏸️ 暂停滚动</button>
+        <button id="resumeScrollBtn">▶️ 继续滚动</button>
+    </div>
+    <div class="memory-gallery-wrapper" id="memoryGalleryWrapper">
+        <div class="memory-scroll-container" id="memoryScrollContainer"></div>
+    </div>
+</div>
+
 <script>
     // ---------- 全局路由 & 单页切换核心 ----------
     const pages = {
@@ -832,7 +1029,8 @@
         contact: document.getElementById('page-contact'),
         projects: document.getElementById('page-projects'),
         relax: document.getElementById('page-relax'),
-        finance: document.getElementById('page-finance')
+        finance: document.getElementById('page-finance'),
+        memory: document.getElementById('page-memory')
     };
     let currentPage = 'main';
     let globalLenis = null;
@@ -846,6 +1044,9 @@
     // 显示loading并切换页面
     function switchToPage(pageId, showLoadingEffect = true) {
         if (currentPage === pageId) return;
+        if (currentPage === 'memory' && window.__memoryCleanup) {
+            window.__memoryCleanup();
+        }
         const doSwitch = () => {
             Object.keys(pages).forEach(id => {
                 pages[id].classList.remove('active');
@@ -870,6 +1071,7 @@
             }
             if (pageId === 'projects') reinitProjectsToggle();
             if (pageId === 'relax') initRelaxPage();
+            if (pageId === 'memory') initmemoryScroll();
             if (globalLenis) globalLenis.scrollTo(0, { duration: 0 });
             else window.scrollTo(0, 0);
             if (globalLenis) setTimeout(() => globalLenis.resize(), 200);
@@ -1201,10 +1403,12 @@
     const pokerDeck = document.getElementById('pokerDeck');
     let pokers = [...pokerDeck.querySelectorAll('.poker:not(.poker_top)')];
     const transforms = [
-        "rotate(-10deg) translate(0%, 0%)",
-        "rotate(-6deg) translate(35%, -12%)",
-        "rotate(-2deg) translate(65%, -19%)",
-        "rotate(2deg) translate(95%, -26%)"
+        "rotate(-12deg) translate(0%, 0%)",
+        "rotate(-7deg) translate(32%, -8%)",
+        "rotate(-2deg) translate(60%, -15%)",
+        "rotate(3deg) translate(88%, -22%)",
+        "rotate(8deg) translate(115%, -28%)",
+        "rotate(12deg) translate(142%, -33%)"
     ];
 
     function updatePokerUI() {
@@ -1253,6 +1457,111 @@
             bgText.style.strokeDashoffset = `${150 - (ratio * 150)}px`;
         }
     });
+
+    // ==================== 回忆录模块 ====================
+    let memoryScrollInterval = null;
+    let ismemoryPaused = false;
+
+    const memoryData = [
+        { date: "2021.10.08", desc: "🌿 团建 · 大学初见", img: "images/U-T-B.jpg" },
+        { date: "2021.10.08", desc: "🌿 团建 · 大学初见2", img: "images/tb-u2.jpg" },
+        { date: "2021.10.08", desc: "🌿 团建 · 大学初见3", img: "images/team-building20211008.jpg" },
+        { date: "2018.07.02", desc: "🎆 小时候的中二病--刺客信条手套", img: "images/bSyndrome1.jpg" },
+        { date: "2018.07.02", desc: "🎆 远古LOL", img: "images/LOL1.jpg" },
+        { date: "2014.07.01", desc: "🍁 第一个证书 · 剑桥英语", img: "images/jqyy.jpg" },
+        { date: "2018.03.12", desc: "❄️ 某不知名 · 男演员", img: "images/sdr.jpg" },
+        { date: "2018.07.27", desc: "🌸 夏日 · 济州岛大餐", img: "images/JZD.jpg" },
+        { date: "2024.08.15", desc: "🏖️ 海岛度假 · 灯塔", img: "images/JZD2.jpg" },
+        { date: "2024.12.25", desc: "🎄 圣诞露营 · 星空下弹吉他", img: "images/2024-12-25_christmas.jpg" },
+        { date: "2025.06.10", desc: "🎓 大学毕业典礼 · 学士帽飞扬", img: "images/2025-06-10_graduation.jpg" },
+        { date: "2025.09.01", desc: "💼 入职第一周 · 机器人实验室初体验", img: "images/2025-09-01_work.jpg" }
+    ];
+
+    function buildmemoryCards() {
+        const container = document.getElementById('memoryScrollContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        memoryData.forEach((item, idx) => {
+            const card = document.createElement('div');
+            card.className = 'memory-card';
+            card.setAttribute('data-idx', idx);
+            card.innerHTML = `
+                <img class="card-media" src="${item.img}" alt="memory" loading="lazy">
+                <div class="card-info">
+                    <div class="card-date">📅 ${item.date}</div>
+                    <div class="card-title">${item.desc}</div>
+                </div>
+            `;
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showmemoryDetail(idx);
+            });
+            container.appendChild(card);
+        });
+    }
+
+    function showmemoryDetail(idx) {
+        const item = memoryData[idx];
+        let modal = document.getElementById('memoryModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'memoryModal';
+            modal.className = 'memory-modal';
+            modal.innerHTML = `<div class="modal-content"><img id="modalImg" src=""><h3 id="modalDate"></h3><p id="modalDesc"></p><button class="modal-close">关闭回忆</button></div>`;
+            document.body.appendChild(modal);
+            modal.querySelector('.modal-close').addEventListener('click', () => modal.classList.remove('active'));
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+        }
+        document.getElementById('modalImg').src = item.img;
+        document.getElementById('modalDate').innerText = item.date;
+        document.getElementById('modalDesc').innerText = item.desc;
+        modal.classList.add('active');
+    }
+
+    function startmemoryAutoScroll() {
+        if (memoryScrollInterval) clearInterval(memoryScrollInterval);
+        memoryScrollInterval = setInterval(() => {
+            if (ismemoryPaused) return;
+            const container = document.getElementById('memoryScrollContainer');
+            if (!container) return;
+            const maxScroll = container.scrollWidth - container.clientWidth;
+            if (maxScroll <= 0) return;
+            let nextScroll = container.scrollLeft + 2;
+            if (nextScroll >= maxScroll) nextScroll = 0;
+            container.scrollTo({ left: nextScroll, behavior: 'smooth' });
+        }, 40);
+    }
+
+    function initmemoryScroll() {
+        buildmemoryCards();
+        if (memoryScrollInterval) clearInterval(memoryScrollInterval);
+        ismemoryPaused = false;
+        startmemoryAutoScroll();
+
+        const wrapper = document.getElementById('memoryGalleryWrapper');
+        const pauseBtn = document.getElementById('pauseScrollBtn');
+        const resumeBtn = document.getElementById('resumeScrollBtn');
+
+        if (pauseBtn && resumeBtn) {
+            pauseBtn.onclick = () => { ismemoryPaused = true; };
+            resumeBtn.onclick = () => { ismemoryPaused = false; };
+        }
+
+        const handleMouseEnter = () => { ismemoryPaused = true; };
+        const handleMouseLeave = () => { ismemoryPaused = false; };
+        if (wrapper) {
+            wrapper.addEventListener('mouseenter', handleMouseEnter);
+            wrapper.addEventListener('mouseleave', handleMouseLeave);
+        }
+
+        window.__memoryCleanup = () => {
+            if (wrapper) {
+                wrapper.removeEventListener('mouseenter', handleMouseEnter);
+                wrapper.removeEventListener('mouseleave', handleMouseLeave);
+            }
+            if (memoryScrollInterval) clearInterval(memoryScrollInterval);
+        };
+    }
 
     // 启动
     window.addEventListener('load', () => {

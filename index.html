@@ -522,8 +522,8 @@
             z-index: 1;
         }
         .timeline-circle {
-            width: 100px;
-            height: 100px;
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
             background: #0d1117;
             border: 6px solid #17f700;
@@ -540,8 +540,8 @@
         }
         .timeline-item:hover .timeline-circle,
         .timeline-item.active .timeline-circle {
-            width: 130px;
-            height: 130px;
+            width: 180px;
+            height: 180px;
             border-color: #fff;
             transform: translate(-50%, -50%) rotate(360deg);
             box-shadow: 0 0 40px rgba(23, 247, 0, 0.8);
@@ -573,7 +573,7 @@
             border-radius: 1rem;
             padding: 2rem;
             position: absolute;
-            top: -50px;
+            top: -70px;
             backdrop-filter: blur(10px);
             opacity: 0;
             transform: scale(0.5) translateY(100px);
@@ -1010,11 +1010,13 @@
 <div id="page-memory" class="page">
     <div class="memory-header">
         <h1>📖 时光手札 · 温暖回忆录</h1>
-        <p>每一帧都是生命里发光的瞬间，点击卡片重温美好</p>
+        <p>每一帧都是生命里发光的瞬间，只是看多了容易泪目</p>
     </div>
     <div class="scroll-control">
         <button id="pauseScrollBtn">⏸️ 暂停滚动</button>
         <button id="resumeScrollBtn">▶️ 继续滚动</button>
+        <input type="range" id="speedSlider" min="1" max="10" value="2" step="1" style="width: 150px; margin-left: 1rem; background: #d48c54; accent-color: #c45c2c;">
+        <label for="speedSlider" style="color: #5a3e2b;">滚动速度</label>
     </div>
     <div class="memory-gallery-wrapper" id="memoryGalleryWrapper">
         <div class="memory-scroll-container" id="memoryScrollContainer"></div>
@@ -1232,8 +1234,8 @@
 
         const timelineData = [
             { year: "2003.5", desc: "出生 · 人生启程", img: null },
-            { year: "2009.6", desc: "幼儿园毕业 · 初识世界", img: null },
-            { year: "2015.6", desc: "小学毕业 · 懵懂少年", img: null },
+            { year: "2009.6", desc: "幼儿园毕业 · 初识世界", img: "images/Kindergarten.jpg" },
+            { year: "2015.6", desc: "小学毕业 · 懵懂少年", img: "images/Primary_School.jpg" },
             { year: "2015.9", desc: "初中入学 · 新的征程", img: null },
             { year: "", desc: "—— 空白节点 ——", img: null },
             { year: "2018.6", desc: "初中毕业 · 青春成长", img: null },
@@ -1243,7 +1245,7 @@
             { year: "", desc: "—— 空白节点 ——", img: null },
             { year: "2020", desc: "法国之旅 · 异国文化体验", img: null },
             { year: "2020", desc: "疫情爆发 · 回国居家", img: null },
-            { year: "2021.6", desc: "高中毕业 · 成年礼", img: null },
+            { year: "2021.6", desc: "高中毕业 · 官方版", img: "images/highschool.jpg" },
             { year: "2021.9", desc: "大学入学 · 专业探索", img: null },
             { year: "", desc: "—— 空白节点 ——", img: null },
             { year: "", desc: "—— 空白节点 ——", img: null },
@@ -1460,6 +1462,7 @@
 
     // ==================== 回忆录模块 ====================
     let memoryScrollInterval = null;
+    let memoryScrollSpeed = 2;
     let ismemoryPaused = false;
 
     const memoryData = [
@@ -1473,9 +1476,13 @@
         { date: "2018.07.27", desc: "🌸 夏日 · 济州岛大餐", img: "images/JZD.jpg" },
         { date: "2024.08.15", desc: "🏖️ 海岛度假 · 灯塔", img: "images/JZD2.jpg" },
         { date: "2021.04.30", desc: "🏖️ 高中活动 · 这真无敌吧", img: "images/GZ_1.jpg" },
-        { date: "2024.12.25", desc: "🎄 圣诞露营 · 星空下弹吉他", img: "images/2024-12-25_christmas.jpg" },
-        { date: "2025.06.10", desc: "🎓 大学毕业典礼 · 学士帽飞扬", img: "images/2025-06-10_graduation.jpg" },
-        { date: "2025.09.01", desc: "💼 入职第一周 · 机器人实验室初体验", img: "images/2025-09-01_work.jpg" }
+        { date: "2021.04.30", desc: "🏖️ 高中毕业 · 温馨版", img: "images/highschool2.jpg" },
+        { date: "2024.12.29", desc: "🎄 圣诞露营 · 温泉星空1", img: "images/24wq1.jpg" },
+        { date: "2024.12.28", desc: "🎄 圣诞露营 · 温泉星空2", img: "images/24wq2.jpg" },
+        { date: "2024.12.28", desc: "🎄 圣诞露营 · 温泉星空3", img: "images/24wq3.jpg" },
+        { date: "2024.12.29", desc: "🎄 圣诞露营 · 温泉星空4", img: "images/24wq4.jpg" },
+        { date: "2023.01.22", desc: "🌿 小山猫 · 喂它吃巧克力咖啡糖居然全吃了", img: "images/xsm.jpg" },
+        { date: "2025.09.01", desc: "💼 未完待续哦", img: "images/zcbc.jpg" }
     ];
 
     function buildmemoryCards() {
@@ -1527,7 +1534,7 @@
             if (!container) return;
             const maxScroll = container.scrollWidth - container.clientWidth;
             if (maxScroll <= 0) return;
-            let nextScroll = container.scrollLeft + 2;
+            let nextScroll = container.scrollLeft + memoryScrollSpeed;
             if (nextScroll >= maxScroll) nextScroll = 0;
             container.scrollTo({ left: nextScroll, behavior: 'smooth' });
         }, 40);
@@ -1571,6 +1578,12 @@
         buildTimeline();
         initRelaxPage();
         bindGameCardClicks();
+        const speedSlider = document.getElementById('speedSlider');
+        if (speedSlider) {
+            speedSlider.addEventListener('input', (e) => {
+                memoryScrollSpeed = parseInt(e.target.value);
+            });
+        }
         setTimeout(() => { if(globalLenis) globalLenis.resize(); }, 200);
         if (window.location.hash === '#game') switchToPage('game');
     });

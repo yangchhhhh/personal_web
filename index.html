@@ -318,6 +318,7 @@
             width: 100%;
             height: 100vh;
             overflow: hidden;
+            background: #0a0e14;
         }
         .infinite-photos {
             position: absolute;
@@ -328,6 +329,7 @@
             left: 0;
             width: 100%;
             height: 100%;
+            will-change: transform;
         }
         .infinite-photos:active { cursor: grabbing; }
         .photos_line {
@@ -336,6 +338,7 @@
             margin-bottom: 48em;
             flex-shrink: 0;
             display: flex;
+            justify-content: flex-start;
         }
         .photo-item {
             font-size: 1px;
@@ -346,6 +349,10 @@
             text-decoration: none;
             display: block;
             cursor: pointer;
+            transition: filter 0.2s;
+        }
+        .photo-item:hover {
+            filter: brightness(1.05);
         }
         .inner {
             position: relative;
@@ -356,6 +363,7 @@
             border-radius: 15px;
             border: 2px solid #17f700;
             overflow: hidden;
+            background: #111;
         }
         .photo-item:hover .inner { transform: rotateY(180deg); box-shadow: 0 0 30px rgba(23,247,0,0.5); }
         .front, .back {
@@ -414,6 +422,59 @@
             font-size: 0.8rem;
             color: #aaa;
             margin-top: 1rem;
+        }
+
+        /* 温馨提示框 */
+        .game-tip-card {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 2500;
+            background: rgba(255, 245, 220, 0.95);
+            backdrop-filter: blur(10px);
+            border-left: 6px solid #ffb347;
+            border-radius: 20px;
+            padding: 1rem 1.6rem;
+            max-width: 280px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,180,70,0.4);
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            cursor: default;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            animation: gentleFloat 3s infinite ease-in-out;
+        }
+        .game-tip-card p {
+            font-size: 0.95rem;
+            line-height: 1.45;
+            color: #5a3a22;
+            font-weight: 500;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .game-tip-card p::before {
+            content: "✨";
+            font-size: 1.2rem;
+        }
+        .game-tip-card p::after {
+            content: "🎮";
+            font-size: 1.1rem;
+            margin-left: 4px;
+        }
+        @keyframes gentleFloat {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+            100% { transform: translateY(0px); }
+        }
+        @media (max-width: 680px) {
+            .game-tip-card {
+                bottom: 1rem;
+                right: 1rem;
+                padding: 0.6rem 1.2rem;
+                max-width: 240px;
+            }
+            .game-tip-card p { font-size: 0.75rem; }
         }
 
         /* 游戏 iframe 容器 */
@@ -605,7 +666,7 @@
             object-fit: cover;
         }
 
-        /* ---------- RELAX 页面 a-waves 样式 ---------- */
+        /* RELAX 页面 a-waves 样式 */
         .relax-full {
             position: relative;
             width: 100%;
@@ -613,242 +674,45 @@
             overflow: hidden;
             background: #0d1117;
         }
-        a-waves {
-            --x: -0.5rem;
-            --y: 50%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        a-waves:before {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 0.5rem;
-            height: 0.5rem;
-            background: #17f700;
-            border-radius: 50%;
-            transform: translate3d(calc(var(--x) - 50%), calc(var(--y) - 50%), 0);
-            will-change: transform;
-            content: "";
-        }
-        a-waves svg {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        a-waves svg path {
-            fill: none;
-            stroke: #17f700;
-            stroke-width: 1px;
-        }
+        a-waves { --x: -0.5rem; --y: 50%; position: absolute; top:0; left:0; margin:0; padding:0; width:100%; height:100%; overflow:hidden; }
+        a-waves:before { position: absolute; top:0; left:0; width:0.5rem; height:0.5rem; background:#17f700; border-radius:50%; transform:translate3d(calc(var(--x) - 50%), calc(var(--y) - 50%), 0); will-change:transform; content:""; }
+        a-waves svg { display:block; width:100%; height:100%; }
+        a-waves svg path { fill:none; stroke:#17f700; stroke-width:1px; }
 
-        /* 响应式调整 */
         @media (max-width: 800px) {
-            .timeline-time {
-                top: -110px;
-                font-size: 1.4rem;
-            }
-            .timeline-item.left .timeline-time {
-                left: calc(50% - 100px);
-            }
-            .timeline-item.right .timeline-time {
-                left: calc(50% + 100px);
-            }
-            .timeline-circle {
-                width: 80px;
-                height: 80px;
-            }
-            .timeline-content {
-                width: 260px;
-            }
+            .timeline-time { top: -110px; font-size: 1.4rem; }
+            .timeline-item.left .timeline-time { left: calc(50% - 100px); }
+            .timeline-item.right .timeline-time { left: calc(50% + 100px); }
+            .timeline-circle { width: 80px; height: 80px; }
+            .timeline-content { width: 260px; }
         }
-        /* ========== 回忆录页面 (温馨风格) ========== */
-        #page-memory {
-            background: linear-gradient(145deg, #fff9ef 0%, #fff1e0 100%);
-            min-height: 100vh;
-            position: relative;
-        }
-        .memory-header {
-            text-align: center;
-            padding: 3rem 1rem 1rem;
-            font-family: 'Segoe UI', 'Courier New', monospace;
-        }
-        .memory-header h1 {
-            font-size: 3.5rem;
-            color: #c45c2c;
-            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.05);
-            letter-spacing: 2px;
-        }
-        .memory-header p {
-            font-size: 1.2rem;
-            color: #b97f5a;
-            margin-top: 0.5rem;
-            font-style: italic;
-        }
-        .scroll-control {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        .scroll-control button {
-            background: #d48c54;
-            border: none;
-            padding: 0.5rem 1.2rem;
-            border-radius: 40px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            font-family: monospace;
-        }
-        .scroll-control button:hover {
-            background: #b45a2c;
-        }
-        .memory-gallery-wrapper {
-            position: relative;
-            width: 100%;
-            overflow: hidden;
-            padding: 2rem 0 4rem;
-            cursor: grab;
-        }
-        .memory-gallery-wrapper:active {
-            cursor: grabbing;
-        }
-        .memory-scroll-container {
-            display: flex;
-            gap: 2rem;
-            overflow-x: auto;
-            scroll-behavior: smooth;
-            padding: 1rem 2rem;
-            scrollbar-width: none;
-            transition: all 0.2s;
-        }
-        .memory-scroll-container::-webkit-scrollbar {
-            display: none;
-        }
-        .memory-card {
-            flex: 0 0 auto;
-            width: 320px;
-            background: #ffffffdd;
-            backdrop-filter: blur(4px);
-            border-radius: 32px;
-            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 215, 170, 0.6);
-            overflow: hidden;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            transform: scale(1);
-        }
-        .memory-card:hover {
-            transform: translateY(-12px) scale(1.02);
-            box-shadow: 0 30px 45px -12px rgba(0, 0, 0, 0.25);
-            background: #fff;
-        }
-        .card-media {
-            width: 100%;
-            height: 240px;
-            object-fit: cover;
-            display: block;
-            transition: transform 0.5s;
-        }
-        .memory-card:hover .card-media {
-            transform: scale(1.03);
-        }
-        .card-info {
-            padding: 1.5rem;
-            background: rgba(255, 248, 235, 0.95);
-        }
-        .card-date {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #c45c2c;
-            margin-bottom: 0.5rem;
-            font-family: monospace;
-        }
-        .card-title {
-            font-size: 1rem;
-            color: #5a3e2b;
-            line-height: 1.4;
-            font-weight: 500;
-        }
-        .memory-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(8px);
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-            font-family: system-ui, 'Courier New', monospace;
-        }
-        .memory-modal.active {
-            display: flex;
-        }
-        .modal-content {
-            background: #fffef7;
-            border-radius: 2rem;
-            max-width: 500px;
-            width: 85%;
-            padding: 2rem;
-            text-align: center;
-            box-shadow: 0 30px 40px rgba(0, 0, 0, 0.3);
-            border: 1px solid #ffcd94;
-            animation: fadeUp 0.3s ease;
-        }
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .modal-content img {
-            width: 100%;
-            max-height: 260px;
-            object-fit: cover;
-            border-radius: 1rem;
-            margin-bottom: 1rem;
-            border: 2px solid #ffcd94;
-        }
-        .modal-content h3 {
-            font-size: 2rem;
-            color: #b45a2c;
-            margin-bottom: 0.75rem;
-        }
-        .modal-content p {
-            font-size: 1.1rem;
-            color: #4f3a28;
-            line-height: 1.5;
-            margin-bottom: 1.5rem;
-        }
-        .modal-close {
-            background: #d48c54;
-            border: none;
-            padding: 0.8rem 2rem;
-            border-radius: 60px;
-            font-size: 1rem;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .modal-close:hover {
-            background: #b45a2c;
-            transform: scale(0.98);
-        }
+        /* 回忆录页面 */
+        #page-memory { background: linear-gradient(145deg, #fff9ef 0%, #fff1e0 100%); min-height: 100vh; position: relative; }
+        .memory-header { text-align: center; padding: 3rem 1rem 1rem; font-family: 'Segoe UI', monospace; }
+        .memory-header h1 { font-size: 3.5rem; color: #c45c2c; text-shadow: 2px 2px 8px rgba(0,0,0,0.05); letter-spacing: 2px; }
+        .memory-header p { font-size: 1.2rem; color: #b97f5a; margin-top: 0.5rem; font-style: italic; }
+        .scroll-control { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1rem; }
+        .scroll-control button { background: #d48c54; border: none; padding: 0.5rem 1.2rem; border-radius: 40px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .scroll-control button:hover { background: #b45a2c; }
+        .memory-gallery-wrapper { position: relative; width: 100%; overflow: hidden; padding: 2rem 0 4rem; cursor: grab; }
+        .memory-gallery-wrapper:active { cursor: grabbing; }
+        .memory-scroll-container { display: flex; gap: 2rem; overflow-x: auto; scroll-behavior: smooth; padding: 1rem 2rem; scrollbar-width: none; }
+        .memory-scroll-container::-webkit-scrollbar { display: none; }
+        .memory-card { flex: 0 0 auto; width: 320px; background: #ffffffdd; backdrop-filter: blur(4px); border-radius: 32px; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.15); overflow: hidden; transition: all 0.3s ease; cursor: pointer; transform: scale(1); }
+        .memory-card:hover { transform: translateY(-12px) scale(1.02); background: #fff; }
+        .card-media { width: 100%; height: 240px; object-fit: cover; display: block; transition: transform 0.5s; }
+        .memory-card:hover .card-media { transform: scale(1.03); }
+        .card-info { padding: 1.5rem; background: rgba(255,248,235,0.95); }
+        .card-date { font-size: 1.3rem; font-weight: bold; color: #c45c2c; margin-bottom: 0.5rem; }
+        .card-title { font-size: 1rem; color: #5a3e2b; line-height: 1.4; }
+        .memory-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 10000; justify-content: center; align-items: center; }
+        .memory-modal.active { display: flex; }
+        .modal-content { background: #fffef7; border-radius: 2rem; max-width: 500px; width: 85%; padding: 2rem; text-align: center; animation: fadeUp 0.3s ease; border: 1px solid #ffcd94; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(30px);} to { opacity:1; transform:translateY(0);} }
+        .modal-content img { width:100%; max-height:260px; object-fit:cover; border-radius:1rem; margin-bottom:1rem; border:2px solid #ffcd94; }
+        .modal-content h3 { font-size:2rem; color:#b45a2c; margin-bottom:0.75rem; }
+        .modal-content p { font-size:1.1rem; color:#4f3a28; line-height:1.5; margin-bottom:1.5rem; }
+        .modal-close { background:#d48c54; border:none; padding:0.8rem 2rem; border-radius:60px; font-size:1rem; font-weight:bold; color:white; cursor:pointer; transition:0.2s; }
     </style>
 </head>
 <body>
@@ -919,9 +783,12 @@
         </div>
     </div>
     <div class="game-iframe-container" id="gameIframeContainer">
-        <!-- 添加 tabindex="0" 使 iframe 可以获得焦点 -->
         <iframe id="gameFrame" src="about:blank" allowfullscreen sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-pointer-lock" tabindex="0"></iframe>
         <button class="back-to-gallery" id="backToGalleryBtn">← 返回游戏库</button>
+    </div>
+    <!-- 温馨提示浮层 -->
+    <div class="game-tip-card" id="gameWarmTip">
+        <p>✨ 此界面可以无限上下左右拖动——更多游戏尽请期待上线~ 🎮</p>
     </div>
 </div>
 
@@ -942,13 +809,13 @@
             <h2 style="color:#fff; font-size: 2rem; margin-bottom: 2rem;">//leave_message</h2>
             <form id="messageForm">
                 <div style="margin-bottom: 1rem;">
-                    <input type="text" id="msgName" placeholder="您的名字" required style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px;">
+                    <input type="text" id="msg2Name" placeholder="您的名字" required style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px;">
                 </div>
                 <div style="margin-bottom: 1rem;">
-                    <input type="text" id="msgNickname" placeholder="昵称（可选）" style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px;">
+                    <input type="text" id="msg2Nickname" placeholder="昵称（可选）" style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px;">
                 </div>
                 <div style="margin-bottom: 1rem;">
-                    <textarea id="msgContent" placeholder="留言内容" required style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px; min-height: 100px; resize: vertical;"></textarea>
+                    <textarea id="msg2Content" placeholder="留言内容" required style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px; min-height: 100px; resize: vertical;"></textarea>
                 </div>
                 <button type="submit" style="background: #17f700; color: #0d1117; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: bold;">发送留言</button>
             </form>
@@ -1037,39 +904,33 @@
     let currentPage = 'main';
     let globalLenis = null;
 
-    // Loading 效果对象
     const loading = {
         container: document.getElementById('globalLoading'),
         out() { this.container.classList.add('loading_out'); }
     };
 
-    // 显示loading并切换页面
     function switchToPage(pageId, showLoadingEffect = true) {
         if (currentPage === pageId) return;
-        if (currentPage === 'memory' && window.__memoryCleanup) {
-            window.__memoryCleanup();
-        }
+        if (currentPage === 'memory' && window.__memoryCleanup) window.__memoryCleanup();
         const doSwitch = () => {
-            Object.keys(pages).forEach(id => {
-                pages[id].classList.remove('active');
-            });
+            Object.keys(pages).forEach(id => pages[id].classList.remove('active'));
             pages[pageId].classList.add('active');
             currentPage = pageId;
             document.getElementById('globalBackBtn').classList.toggle('hide', pageId === 'main');
-            // 页面特定重绘/初始化
             if (pageId === 'game') {
-                reinitGamePage();
+                if (typeof reinitGamePage === 'function') reinitGamePage();
                 const photosContainer = document.getElementById('gamePhotosContainer');
                 const iframeContainer = document.getElementById('gameIframeContainer');
                 if (photosContainer && iframeContainer) {
                     photosContainer.style.display = 'block';
                     iframeContainer.style.display = 'none';
                 }
-                // 恢复父页面按钮显示
                 const globalBack = document.getElementById('globalBackBtn');
-                const backToGalleryBtn = document.getElementById('backToGalleryBtn');
+                const backBtn = document.getElementById('backToGalleryBtn');
                 if (globalBack) globalBack.classList.remove('hide');
-                if (backToGalleryBtn) backToGalleryBtn.style.display = 'flex';
+                if (backBtn) backBtn.style.display = 'flex';
+                const tipBox = document.getElementById('gameWarmTip');
+                if (tipBox) tipBox.style.display = 'flex';
             }
             if (pageId === 'projects') reinitProjectsToggle();
             if (pageId === 'relax') initRelaxPage();
@@ -1080,25 +941,20 @@
         };
         if (showLoadingEffect) {
             loading.container.classList.remove('loading_out');
-            setTimeout(() => {
-                doSwitch();
-                loading.container.classList.add('loading_out');
-            }, 1000);
-        } else {
-            doSwitch();
-        }
+            setTimeout(() => { doSwitch(); loading.out(); }, 1000);
+        } else doSwitch();
     }
 
     function goBackHome() { switchToPage('main'); }
 
-    // ---------- GAME 页面无限滚动逻辑 ----------
+    // ---------- GAME 页面无限滚动 + 居中偏移 ----------
     let gamePhotobox = null;
     function reinitGamePage() {
         const container = document.querySelector('#page-game .infinite-photos');
         if (!container) return;
-        if (gamePhotobox) window.removeEventListener('resize', gamePhotobox.resizeHandler);
+        if (gamePhotobox && gamePhotobox.destroy) gamePhotobox.destroy();
         const photoItems = [...container.querySelectorAll('.photo-item')];
-        if (photoItems.length === 0) return;
+        if (!photoItems.length) return;
         let containerWidth = container.offsetWidth;
         let containerHeight = container.offsetHeight;
         let photoWidth = photoItems[0].offsetWidth;
@@ -1107,6 +963,28 @@
         let imgData = [];
         let ifMovable = false, mouseX = 0, mouseY = 0;
 
+        function calcCenteringOffsets() {
+            const lines = [...container.querySelectorAll('.photos_line')];
+            if (!lines.length) return { offsetX: 0, offsetY: 0 };
+            const firstLine = lines[0];
+            const itemsInLine = [...firstLine.querySelectorAll('.photo-item')];
+            let totalRowWidth = 0;
+            itemsInLine.forEach(item => {
+                const style = getComputedStyle(item);
+                const marginRight = parseFloat(style.marginRight) || 0;
+                totalRowWidth += item.offsetWidth + marginRight;
+            });
+            let totalHeight = 0;
+            lines.forEach(line => {
+                const lineStyle = getComputedStyle(line);
+                const marginBottom = parseFloat(lineStyle.marginBottom) || 0;
+                totalHeight += line.offsetHeight + marginBottom;
+            });
+            const offsetX = totalRowWidth < containerWidth ? (containerWidth - totalRowWidth) / 2 : 20;
+            const offsetY = totalHeight < containerHeight ? (containerHeight - totalHeight) / 2 : 60;
+            return { offsetX: Math.max(0, offsetX), offsetY: Math.max(30, offsetY) };
+        }
+
         function resizeHandler() {
             containerWidth = container.offsetWidth;
             containerHeight = container.offsetHeight;
@@ -1114,10 +992,21 @@
             if (photoItems[0]) photoHeight = photoItems[0].offsetHeight;
             scaleNums = document.body.offsetWidth / 1440;
             container.style.transform = `scale(${scaleNums})`;
+            const { offsetX, offsetY } = calcCenteringOffsets();
             imgData = photoItems.map(img => ({
-                node: img, x: img.offsetLeft, y: img.offsetTop, mov_x: 0, mov_y: 0, ani: null
+                node: img,
+                x: img.offsetLeft,
+                y: img.offsetTop,
+                mov_x: offsetX,
+                mov_y: offsetY,
+                ani: null
             }));
+            imgData.forEach(img => {
+                if (img.ani) img.ani.kill();
+                img.ani = gsap.to(img.node, { x: img.mov_x, y: img.mov_y, duration: 0, ease: 'none' });
+            });
         }
+
         function moveHandler(clientX, clientY) {
             if (!ifMovable) return;
             let distanceX = (clientX - mouseX) / scaleNums;
@@ -1139,78 +1028,53 @@
         function onMouseMove(e) { moveHandler(e.clientX, e.clientY); }
         function onTouchStart(e) { ifMovable = true; mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; }
         function onTouchMove(e) { moveHandler(e.touches[0].clientX, e.touches[0].clientY); }
-        function init() {
-            resizeHandler();
-            window.addEventListener('resize', resizeHandler);
-            container.addEventListener('mousedown', onMouseDown);
-            window.addEventListener('mouseup', onMouseUp);
-            window.addEventListener('mousemove', onMouseMove);
-            container.addEventListener('touchstart', onTouchStart);
-            window.addEventListener('touchmove', onTouchMove);
-            window.addEventListener('touchend', onMouseUp);
-        }
-        function destroy() {
-            window.removeEventListener('resize', resizeHandler);
-            container.removeEventListener('mousedown', onMouseDown);
-            window.removeEventListener('mouseup', onMouseUp);
-            window.removeEventListener('mousemove', onMouseMove);
-            container.removeEventListener('touchstart', onTouchStart);
-            window.removeEventListener('touchmove', onTouchMove);
-            window.removeEventListener('touchend', onMouseUp);
-        }
-        if (gamePhotobox && gamePhotobox.destroy) gamePhotobox.destroy();
+        function init() { resizeHandler(); window.addEventListener('resize', resizeHandler); container.addEventListener('mousedown', onMouseDown); window.addEventListener('mouseup', onMouseUp); window.addEventListener('mousemove', onMouseMove); container.addEventListener('touchstart', onTouchStart); window.addEventListener('touchmove', onTouchMove); window.addEventListener('touchend', onMouseUp); }
+        function destroy() { window.removeEventListener('resize', resizeHandler); container.removeEventListener('mousedown', onMouseDown); window.removeEventListener('mouseup', onMouseUp); window.removeEventListener('mousemove', onMouseMove); container.removeEventListener('touchstart', onTouchStart); window.removeEventListener('touchmove', onTouchMove); window.removeEventListener('touchend', onMouseUp); }
         init();
         gamePhotobox = { destroy, resizeHandler };
     }
 
-    // ---------- 游戏嵌入（添加聚焦） ----------
     function startGame(gameUrl) {
         const iframe = document.getElementById('gameFrame');
         iframe.src = gameUrl;
         const photosContainer = document.getElementById('gamePhotosContainer');
         const iframeContainer = document.getElementById('gameIframeContainer');
-        photosContainer.style.display = 'none';
-        iframeContainer.style.display = 'block';
-        // 隐藏父页面按钮
+        if (photosContainer) photosContainer.style.display = 'none';
+        if (iframeContainer) iframeContainer.style.display = 'block';
         const globalBack = document.getElementById('globalBackBtn');
-        const backToGalleryBtn = document.getElementById('backToGalleryBtn');
+        const backBtn = document.getElementById('backToGalleryBtn');
         if (globalBack) globalBack.classList.add('hide');
-        if (backToGalleryBtn) backToGalleryBtn.style.display = 'none';
-        // 等待 iframe 加载完成，并尝试聚焦
-        iframe.onload = () => {
-            try {
-                iframe.contentWindow.focus();
-            } catch(e) { console.warn('无法聚焦 iframe', e); }
-        };
+        if (backBtn) backBtn.style.display = 'none';
+        const tipBox = document.getElementById('gameWarmTip');
+        if (tipBox) tipBox.style.display = 'none';
+        iframe.onload = () => { try { iframe.contentWindow.focus(); } catch(e) {} };
     }
 
-    // 返回游戏库（全局函数，供 iframe 内调用）
     window.backToGallery = function() {
         const photosContainer = document.getElementById('gamePhotosContainer');
         const iframeContainer = document.getElementById('gameIframeContainer');
-        if (photosContainer && iframeContainer) {
-            photosContainer.style.display = 'block';
-            iframeContainer.style.display = 'none';
-        }
-        // 恢复父页面按钮显示
+        if (photosContainer) photosContainer.style.display = 'block';
+        if (iframeContainer) iframeContainer.style.display = 'none';
         const globalBack = document.getElementById('globalBackBtn');
-        const backToGalleryBtn = document.getElementById('backToGalleryBtn');
-        if (globalBack && currentPage !== 'main') {
-            globalBack.classList.remove('hide');
-        }
-        if (backToGalleryBtn) backToGalleryBtn.style.display = 'flex';
-        // 重新初始化照片墙（避免滚动位置错乱）
+        const backBtn = document.getElementById('backToGalleryBtn');
+        if (globalBack && currentPage !== 'main') globalBack.classList.remove('hide');
+        if (backBtn) backBtn.style.display = 'flex';
+        const tipBox = document.getElementById('gameWarmTip');
+        if (tipBox) tipBox.style.display = 'flex';
         if (typeof reinitGamePage === 'function') reinitGamePage();
     };
 
     function bindGameCardClicks() {
         const cards = document.querySelectorAll('#page-game .photo-item');
         cards.forEach(card => {
-            card.addEventListener('click', (e) => {
+            if (card._clickHandler) card.removeEventListener('click', card._clickHandler);
+            const handler = (e) => {
                 e.preventDefault();
-                const gameUrl = card.getAttribute('href');
-                if (gameUrl) startGame(gameUrl);
-            });
+                const url = card.getAttribute('href');
+                if (url) startGame(url);
+            };
+            card.addEventListener('click', handler);
+            card._clickHandler = handler;
         });
     }
 
@@ -1226,12 +1090,10 @@
         });
     }
 
-    // 构建时间轴节点
     function buildTimeline() {
         const container = document.getElementById('timelineRoot');
         if (!container) return;
         container.innerHTML = '<div class="timeline-line"></div>';
-
         const timelineData = [
             { year: "2003.5", desc: "出生 · 人生启程", img: null },
             { year: "2009.6", desc: "幼儿园毕业 · 初识世界", img: "images/Kindergarten.jpg" },
@@ -1254,27 +1116,21 @@
             { year: "", desc: "—— 空白节点 ——", img: null },
             { year: "", desc: "—— 空白节点 ——", img: null },
             { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
+            { year: "秘密", desc: " 专利 ", img: "images/zl.png" },
             { year: "", desc: "—— 空白节点 ——", img: null },
             { year: "", desc: "—— 空白节点 ——", img: null },
             { year: "2025.6", desc: "大学本科毕业 · 学位授予", img: null },
-            { year: "2026.1至今", desc: "探索与工作 · 新阶段", img: null }
+            { year: "2026.1至今", desc: "探索 · 新阶段", img: null }
         ];
-
-        // 第一个节点添加图片
         if (timelineData[0]) timelineData[0].img = "images/ych.jpg";
-
         timelineData.forEach((item, index) => {
             const side = (index % 2 === 0) ? 'left' : 'right';
             const timelineItem = document.createElement('div');
             timelineItem.className = `timeline-item ${side}`;
-            timelineItem.setAttribute('data-proj', '');
-
             const timeSpan = document.createElement('p');
             timeSpan.className = 'timeline-time';
             timeSpan.textContent = item.year || '—';
             timelineItem.appendChild(timeSpan);
-
             const circleDiv = document.createElement('div');
             circleDiv.className = 'timeline-circle';
             if (item.img) {
@@ -1292,19 +1148,16 @@
                 circleDiv.appendChild(placeholder);
             }
             timelineItem.appendChild(circleDiv);
-
             const contentDiv = document.createElement('div');
             contentDiv.className = 'timeline-content';
             contentDiv.innerHTML = `<h3>${item.year || '事件'}</h3><p>${item.desc}</p>`;
             timelineItem.appendChild(contentDiv);
-
             container.appendChild(timelineItem);
         });
-
         reinitProjectsToggle();
     }
 
-    // ---------- RELAX 页面初始化 ----------
+    // RELAX 页面初始化
     let relaxWaves = null;
     function initRelaxPage() {
         const relaxContainer = document.querySelector('#page-relax .relax-full');
@@ -1323,18 +1176,9 @@
         }, 100);
     }
 
-    // ---------- 漂浮留言板 ----------
-    // 保存留言到本地存储
-    function saveMessagesToStorage(messages) {
-        localStorage.setItem('floatingMessages', JSON.stringify(messages));
-    }
-
-    // 从本地存储加载留言
-    function loadMessagesFromStorage() {
-        const stored = localStorage.getItem('floatingMessages');
-        return stored ? JSON.parse(stored) : [];
-    }
-
+    // 漂浮留言板
+    function saveMessagesToStorage(messages) { localStorage.setItem('floatingMessages', JSON.stringify(messages)); }
+    function loadMessagesFromStorage() { const stored = localStorage.getItem('floatingMessages'); return stored ? JSON.parse(stored) : []; }
     window.postMessageToBoard = function() {
         const area = document.getElementById('floatingMessagesArea');
         const name = document.getElementById('msgName').value || "ANONYMOUS";
@@ -1348,19 +1192,9 @@
         area.appendChild(newMsg);
         let vx = (Math.random() - 0.5) * 1.5, vy = (Math.random() - 0.5) * 1.5;
         let posX = parseFloat(newMsg.style.left), posY = parseFloat(newMsg.style.top);
-
-        // 保存留言数据到 localStorage
         const messages = loadMessagesFromStorage();
-        messages.push({
-            name: name,
-            content: content,
-            left: newMsg.style.left,
-            top: newMsg.style.top,
-            vx: vx,
-            vy: vy
-        });
+        messages.push({ name, content, left: newMsg.style.left, top: newMsg.style.top, vx, vy });
         saveMessagesToStorage(messages);
-
         function floatMove() {
             if (!newMsg.isConnected) return;
             posX += vx; posY += vy;
@@ -1401,26 +1235,18 @@
         }
     }
 
-    // ---------- 扑克导航 (平滑旋转 + 按钮颜色同步) ----------
+    // 扑克导航
     const pokerDeck = document.getElementById('pokerDeck');
     let pokers = [...pokerDeck.querySelectorAll('.poker:not(.poker_top)')];
     const transforms = [
-        "rotate(-12deg) translate(0%, 0%)",
-        "rotate(-7deg) translate(32%, -8%)",
-        "rotate(-2deg) translate(60%, -15%)",
-        "rotate(3deg) translate(88%, -22%)",
-        "rotate(8deg) translate(115%, -28%)",
-        "rotate(12deg) translate(142%, -33%)"
+        "rotate(-12deg) translate(0%, 0%)", "rotate(-7deg) translate(32%, -8%)", "rotate(-2deg) translate(60%, -15%)",
+        "rotate(3deg) translate(88%, -22%)", "rotate(8deg) translate(115%, -28%)", "rotate(12deg) translate(142%, -33%)"
     ];
-
     function updatePokerUI() {
         const bottomCard = pokers.pop();
         pokers.unshift(bottomCard);
         pokerDeck.insertBefore(bottomCard, pokers[1]);
-        pokers.forEach((card, idx) => {
-            card.style.zIndex = pokers.length - idx - 1;
-            card.style.transform = transforms[idx];
-        });
+        pokers.forEach((card, idx) => { card.style.zIndex = pokers.length - idx - 1; card.style.transform = transforms[idx]; });
         const topCard = pokers[0];
         const pageName = topCard.querySelector('h2').innerText;
         const bgColor = window.getComputedStyle(topCard).backgroundColor;
@@ -1429,27 +1255,19 @@
         enterBtn.style.backgroundColor = bgColor;
         return topCard.getAttribute('data-page');
     }
-
     function cyclePoker() { updatePokerUI(); }
-    function executePoker() {
-        const topCard = pokers[0];
-        const pageId = topCard.getAttribute('data-page');
-        if (pageId) switchToPage(pageId);
-    }
-
+    function executePoker() { const pageId = pokers[0].getAttribute('data-page'); if (pageId) switchToPage(pageId); }
     document.getElementById('pokerTopClick')?.addEventListener('click', cyclePoker);
     document.getElementById('enterCommandBtn')?.addEventListener('click', executePoker);
     document.getElementById('globalBackBtn')?.addEventListener('click', goBackHome);
     document.getElementById('backToGalleryBtn')?.addEventListener('click', window.backToGallery);
-
     updatePokerUI();
 
-    // 全局Lenis平滑滚动
+    // Lenis平滑滚动
     globalLenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
     function raf(time) { globalLenis.raf(time); requestAnimationFrame(raf); }
     requestAnimationFrame(raf);
 
-    // 背景文字描边随滚动变化
     window.addEventListener('scroll', () => {
         const bgText = document.querySelector('.bg-text');
         if (bgText && currentPage === 'main') {
@@ -1460,11 +1278,8 @@
         }
     });
 
-    // ==================== 回忆录模块 ====================
-    let memoryScrollInterval = null;
-    let memoryScrollSpeed = 2;
-    let ismemoryPaused = false;
-
+    // 回忆录模块
+    let memoryScrollInterval = null, memoryScrollSpeed = 2, ismemoryPaused = false;
     const memoryData = [
         { date: "2021.10.08", desc: "🌿 团建 · 大学初见", img: "images/U-T-B.jpg" },
         { date: "2021.10.08", desc: "🌿 团建 · 大学初见2", img: "images/tb-u2.jpg" },
@@ -1476,7 +1291,26 @@
         { date: "2018.07.27", desc: "🌸 夏日 · 济州岛大餐", img: "images/JZD.jpg" },
         { date: "2024.08.15", desc: "🏖️ 海岛度假 · 灯塔", img: "images/JZD2.jpg" },
         { date: "2021.04.30", desc: "🏖️ 高中活动 · 这真无敌吧", img: "images/GZ_1.jpg" },
-        { date: "2021.04.30", desc: "🏖️ 高中毕业 · 温馨版", img: "images/highschool2.jpg" },
+        { date: "2021.04.30", desc: "🏖️ 高中秋游 · 七彩云南欢乐世界1", img: "images/GZ_2.jpg" },
+        { date: "2021.04.30", desc: "🏖️ 高中秋游 · 七彩云南欢乐世界2", img: "images/GZ_3.jpg" },
+        { date: "2024.12.29", desc: "🎄 美景 · 冬季", img: "images/beauty1.jpg" },
+        { date: "2019.05.30", desc: "🏝 交换生 · 温馨版", img: "images/fg7.jpg" },
+        { date: "2019.05.30", desc: "🏝 法（第四声）国 · 埃菲尔铁塔", img: "fg1.png" },
+        { date: "2019.06.16", desc: "🏝 莫奈故居1 · 法（第四声）国", img: "images/mn1.jpg" },
+        { date: "2019.06.30", desc: "🏝 莫奈故居2 · 法（第四声）国", img: "images/mn2.jpg" },
+        { date: "2019.04.30", desc: "🏝 莫奈故居3 · 法（第四声）国", img: "images/mn3.jpg" },
+        { date: "2019.04.30", desc: "🏝 莫奈故居4 · 法（第四声）国", img: "images/mn4.jpg" },
+        { date: "2020.04.30", desc: "🏝 莫奈故居5 · 法（第四声）国", img: "images/mn5.jpg" },
+        { date: "2020.04.30", desc: "🏝 香水工厂 · 法（第四声）国", img: "images/xsgc.jpg" },
+        { date: "2020.09.03", desc: "🏝 交换生 · 法（第四声）国", img: "images/fg2.jpg" },
+        { date: "2020.05.30", desc: "🏝 交换生 · 凡尔赛宫1", img: "images/fes1.jpg" },
+        { date: "2020.03.30", desc: "🏝 交换生 · 凡尔赛宫2", img: "images/fes2.jpg" },
+        { date: "2020.04.30", desc: "🏝 公费旅游 · 法国1", img: "images/fg3.jpg" },
+        { date: "2019.10.30", desc: "🏝 公费旅游 · 法国2", img: "images/fg4.jpg" },
+        { date: "2019.10.30", desc: "🏝 公费旅游 · 法国3", img: "images/fg5.jpg" },
+        { date: "2019.10.30", desc: "🏝 公费旅游 · 法国4", img: "images/fg6.jpg" },
+        { date: "2019.10.30", desc: "🏝 公费旅游 · 法国5", img: "images/fg8.jpg" },
+        { date: "2019.10.30", desc: "🏝 初中高中没手机回忆极少, 在线征集555", img: "images/zjzp.jpg" },
         { date: "2024.12.29", desc: "🎄 圣诞露营 · 温泉星空1", img: "images/24wq1.jpg" },
         { date: "2024.12.28", desc: "🎄 圣诞露营 · 温泉星空2", img: "images/24wq2.jpg" },
         { date: "2024.12.28", desc: "🎄 圣诞露营 · 温泉星空3", img: "images/24wq3.jpg" },
@@ -1484,7 +1318,6 @@
         { date: "2023.01.22", desc: "🌿 小山猫 · 喂它吃巧克力咖啡糖居然全吃了", img: "images/xsm.jpg" },
         { date: "2025.09.01", desc: "💼 未完待续哦", img: "images/zcbc.jpg" }
     ];
-
     function buildmemoryCards() {
         const container = document.getElementById('memoryScrollContainer');
         if (!container) return;
@@ -1493,21 +1326,11 @@
             const card = document.createElement('div');
             card.className = 'memory-card';
             card.setAttribute('data-idx', idx);
-            card.innerHTML = `
-                <img class="card-media" src="${item.img}" alt="memory" loading="lazy">
-                <div class="card-info">
-                    <div class="card-date">📅 ${item.date}</div>
-                    <div class="card-title">${item.desc}</div>
-                </div>
-            `;
-            card.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showmemoryDetail(idx);
-            });
+            card.innerHTML = `<img class="card-media" src="${item.img}" alt="memory" loading="lazy"><div class="card-info"><div class="card-date">📅 ${item.date}</div><div class="card-title">${item.desc}</div></div>`;
+            card.addEventListener('click', (e) => { e.stopPropagation(); showmemoryDetail(idx); });
             container.appendChild(card);
         });
     }
-
     function showmemoryDetail(idx) {
         const item = memoryData[idx];
         let modal = document.getElementById('memoryModal');
@@ -1525,7 +1348,6 @@
         document.getElementById('modalDesc').innerText = item.desc;
         modal.classList.add('active');
     }
-
     function startmemoryAutoScroll() {
         if (memoryScrollInterval) clearInterval(memoryScrollInterval);
         memoryScrollInterval = setInterval(() => {
@@ -1539,34 +1361,23 @@
             container.scrollTo({ left: nextScroll, behavior: 'smooth' });
         }, 40);
     }
-
     function initmemoryScroll() {
         buildmemoryCards();
         if (memoryScrollInterval) clearInterval(memoryScrollInterval);
         ismemoryPaused = false;
         startmemoryAutoScroll();
-
         const wrapper = document.getElementById('memoryGalleryWrapper');
         const pauseBtn = document.getElementById('pauseScrollBtn');
         const resumeBtn = document.getElementById('resumeScrollBtn');
-
         if (pauseBtn && resumeBtn) {
             pauseBtn.onclick = () => { ismemoryPaused = true; };
             resumeBtn.onclick = () => { ismemoryPaused = false; };
         }
-
         const handleMouseEnter = () => { ismemoryPaused = true; };
         const handleMouseLeave = () => { ismemoryPaused = false; };
-        if (wrapper) {
-            wrapper.addEventListener('mouseenter', handleMouseEnter);
-            wrapper.addEventListener('mouseleave', handleMouseLeave);
-        }
-
+        if (wrapper) { wrapper.addEventListener('mouseenter', handleMouseEnter); wrapper.addEventListener('mouseleave', handleMouseLeave); }
         window.__memoryCleanup = () => {
-            if (wrapper) {
-                wrapper.removeEventListener('mouseenter', handleMouseEnter);
-                wrapper.removeEventListener('mouseleave', handleMouseLeave);
-            }
+            if (wrapper) { wrapper.removeEventListener('mouseenter', handleMouseEnter); wrapper.removeEventListener('mouseleave', handleMouseLeave); }
             if (memoryScrollInterval) clearInterval(memoryScrollInterval);
         };
     }
@@ -1579,291 +1390,194 @@
         initRelaxPage();
         bindGameCardClicks();
         const speedSlider = document.getElementById('speedSlider');
-        if (speedSlider) {
-            speedSlider.addEventListener('input', (e) => {
-                memoryScrollSpeed = parseInt(e.target.value);
-            });
-        }
+        if (speedSlider) speedSlider.addEventListener('input', (e) => { memoryScrollSpeed = parseInt(e.target.value); });
         setTimeout(() => { if(globalLenis) globalLenis.resize(); }, 200);
         if (window.location.hash === '#game') switchToPage('game');
+        // 确保游戏页面提示框初始显示
+        const tipBox = document.getElementById('gameWarmTip');
+        if (tipBox) {
+            if (document.getElementById('page-game').classList.contains('active') && document.getElementById('gamePhotosContainer')?.style.display !== 'none') tipBox.style.display = 'flex';
+            else tipBox.style.display = 'none';
+        }
     });
     setTimeout(() => loading.out(), 1500);
-</script>
 
-<script>
-    // 自定义波浪元素（完整保留）
+    // 自定义波浪组件
     class Noise {
-      constructor(r) { this.r = r; this.p = new Uint8Array(512); this.permutation(); }
-      permutation() {
-        const permutation = [151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,223,183,170,213,119,248,152, 2,44,154,163,70,221,153,101,155,167,43,172,9,129,22,39,253, 19,98,108,110,79,113,224,232,178,185,112,104,218,246,97,228,251,34,242, 193,238,210,144,12,191,179,162,241,81,51,145,235,249,14,239,107,49,192,214, 31,181,199,106,157,184,84,204,176,115,121,50,45,127,4,150,254,138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180];
-        for (let i = 0; i < 512; i++) this.p[i] = permutation[i % 256];
-      }
-      dot(g, x, y) { return g[0]*x + g[1]*y; }
-      noise(x, y) {
-        const X = Math.floor(x) & 255
-        const Y = Math.floor(y) & 255
-        x -= Math.floor(x)
-        y -= Math.floor(y)
-        const u = this.fade(x), v = this.fade(y)
-        const A = this.p[X]+Y, AA = this.p[A], AB = this.p[A+1]
-        const B = this.p[X+1]+Y, BA = this.p[B], BB = this.p[B+1]
-        return this.lerp(v, this.lerp(u, this.grad(this.p[AA], x, y), this.grad(this.p[BA], x-1, y)),
-                         this.lerp(u, this.grad(this.p[AB], x, y-1), this.grad(this.p[BB], x-1, y-1)))
-      }
-      perlin2(x, y) { return this.noise(x*2, y*2); }
-      fade(t) { return t*t*t*(t*(t*6-15)+10); }
-      lerp(t, a, b) { return a + t*(b-a); }
-      grad(hash, x, y) { const h = hash & 3; return [(h&1)?x:-x, (h&2)?y:-y][0]; }
+        constructor(r) { this.r = r; this.p = new Uint8Array(512); this.permutation(); }
+        permutation() {
+            const permutation = [151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,223,183,170,213,119,248,152, 2,44,154,163,70,221,153,101,155,167,43,172,9,129,22,39,253, 19,98,108,110,79,113,224,232,178,185,112,104,218,246,97,228,251,34,242, 193,238,210,144,12,191,179,162,241,81,51,145,235,249,14,239,107,49,192,214, 31,181,199,106,157,184,84,204,176,115,121,50,45,127,4,150,254,138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180];
+            for (let i = 0; i < 512; i++) this.p[i] = permutation[i % 256];
+        }
+        dot(g, x, y) { return g[0]*x + g[1]*y; }
+        noise(x, y) {
+            const X = Math.floor(x) & 255, Y = Math.floor(y) & 255;
+            x -= Math.floor(x); y -= Math.floor(y);
+            const u = this.fade(x), v = this.fade(y);
+            const A = this.p[X]+Y, AA = this.p[A], AB = this.p[A+1];
+            const B = this.p[X+1]+Y, BA = this.p[B], BB = this.p[B+1];
+            return this.lerp(v, this.lerp(u, this.grad(this.p[AA], x, y), this.grad(this.p[BA], x-1, y)),
+                               this.lerp(u, this.grad(this.p[AB], x, y-1), this.grad(this.p[BB], x-1, y-1)));
+        }
+        perlin2(x, y) { return this.noise(x*2, y*2); }
+        fade(t) { return t*t*t*(t*(t*6-15)+10); }
+        lerp(t, a, b) { return a + t*(b-a); }
+        grad(hash, x, y) { const h = hash & 3; return [(h&1)?x:-x, (h&2)?y:-y][0]; }
     }
-
     class AWaves extends HTMLElement {
-      connectedCallback() {
-        this.svg = this.querySelector('.js-svg')
-        this.mouse = { x: -10, y: 0, lx: 0, ly: 0, sx: 0, sy: 0, v: 0, vs: 0, a: 0, set: false }
-        this.lines = []
-        this.paths = []
-        this.noise = new Noise(Math.random())
-        this.setSize()
-        this.setLines()
-        this.bindEvents()
-        requestAnimationFrame(this.tick.bind(this))
-      }
-      bindEvents() {
-        window.addEventListener('resize', this.onResize.bind(this))
-        window.addEventListener('mousemove', this.onMouseMove.bind(this))
-        this.addEventListener('touchmove', this.onTouchMove.bind(this))
-      }
-      onResize() { this.setSize(); this.setLines(); }
-      onMouseMove(e) { this.updateMousePosition(e.pageX, e.pageY) }
-      onTouchMove(e) { e.preventDefault(); const touch = e.touches[0]; this.updateMousePosition(touch.clientX, touch.clientY) }
-      updateMousePosition(x, y) {
-        const { mouse } = this
-        mouse.x = x - this.bounding.left
-        mouse.y = y - this.bounding.top + window.scrollY
-        if (!mouse.set) {
-          mouse.sx = mouse.x; mouse.sy = mouse.y
-          mouse.lx = mouse.x; mouse.ly = mouse.y
-          mouse.set = true
+        connectedCallback() {
+            this.svg = this.querySelector('.js-svg');
+            this.mouse = { x: -10, y: 0, lx: 0, ly: 0, sx: 0, sy: 0, v: 0, vs: 0, a: 0, set: false };
+            this.lines = []; this.paths = [];
+            this.noise = new Noise(Math.random());
+            this.setSize(); this.setLines();
+            this.bindEvents();
+            requestAnimationFrame(this.tick.bind(this));
         }
-      }
-      setSize() {
-        this.bounding = this.getBoundingClientRect()
-        this.svg.style.width = `${this.bounding.width}px`
-        this.svg.style.height = `${this.bounding.height}px`
-      }
-      setLines() {
-        const { width, height } = this.bounding
-        this.lines = []
-        this.paths.forEach((path) => path.remove())
-        this.paths = []
-        const xGap = 10
-        const yGap = 32
-        const oWidth = width + 200
-        const oHeight = height + 30
-        const totalLines = Math.ceil(oWidth / xGap)
-        const totalPoints = Math.ceil(oHeight / yGap)
-        const xStart = (width - xGap * totalLines) / 2
-        const yStart = (height - yGap * totalPoints) / 2
-        for (let i = 0; i <= totalLines; i++) {
-          const points = []
-          for (let j = 0; j <= totalPoints; j++) {
-            points.push({ x: xStart + xGap * i, y: yStart + yGap * j, wave: { x: 0, y: 0 }, cursor: { x: 0, y: 0, vx: 0, vy: 0 } })
-          }
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-          path.classList.add('a__line', 'js-line')
-          this.svg.appendChild(path)
-          this.paths.push(path)
-          this.lines.push(points)
-        }
-      }
-      movePoints(time) {
-        const { lines, mouse, noise } = this
-        lines.forEach((points) => {
-          points.forEach((p) => {
-            const move = noise.perlin2((p.x + time * 0.0125) * 0.002, (p.y + time * 0.005) * 0.0015) * 12
-            p.wave.x = Math.cos(move) * 32
-            p.wave.y = Math.sin(move) * 16
-            const dx = p.x - mouse.sx
-            const dy = p.y - mouse.sy
-            const d = Math.hypot(dx, dy)
-            const l = Math.max(175, mouse.vs)
-            if (d < l) {
-              const s = 1 - d / l
-              const f = Math.cos(d * 0.001) * s
-              p.cursor.vx += Math.cos(mouse.a) * f * l * mouse.vs * 0.00065
-              p.cursor.vy += Math.sin(mouse.a) * f * l * mouse.vs * 0.00065
+        bindEvents() { window.addEventListener('resize', this.onResize.bind(this)); window.addEventListener('mousemove', this.onMouseMove.bind(this)); this.addEventListener('touchmove', this.onTouchMove.bind(this)); }
+        onResize() { this.setSize(); this.setLines(); }
+        onMouseMove(e) { this.updateMousePosition(e.pageX, e.pageY); }
+        onTouchMove(e) { e.preventDefault(); const touch = e.touches[0]; this.updateMousePosition(touch.clientX, touch.clientY); }
+        updateMousePosition(x, y) { const { mouse } = this; mouse.x = x - this.bounding.left; mouse.y = y - this.bounding.top + window.scrollY; if (!mouse.set) { mouse.sx = mouse.x; mouse.sy = mouse.y; mouse.lx = mouse.x; mouse.ly = mouse.y; mouse.set = true; } }
+        setSize() { this.bounding = this.getBoundingClientRect(); this.svg.style.width = `${this.bounding.width}px`; this.svg.style.height = `${this.bounding.height}px`; }
+        setLines() {
+            const { width, height } = this.bounding;
+            this.lines = [];
+            this.paths.forEach((path) => path.remove());
+            this.paths = [];
+            const xGap = 10, yGap = 32;
+            const oWidth = width + 200, oHeight = height + 30;
+            const totalLines = Math.ceil(oWidth / xGap);
+            const totalPoints = Math.ceil(oHeight / yGap);
+            const xStart = (width - xGap * totalLines) / 2;
+            const yStart = (height - yGap * totalPoints) / 2;
+            for (let i = 0; i <= totalLines; i++) {
+                const points = [];
+                for (let j = 0; j <= totalPoints; j++) points.push({ x: xStart + xGap * i, y: yStart + yGap * j, wave: { x: 0, y: 0 }, cursor: { x: 0, y: 0, vx: 0, vy: 0 } });
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.classList.add('a__line', 'js-line');
+                this.svg.appendChild(path);
+                this.paths.push(path);
+                this.lines.push(points);
             }
-            p.cursor.vx += (0 - p.cursor.x) * 0.005
-            p.cursor.vy += (0 - p.cursor.y) * 0.005
-            p.cursor.vx *= 0.925
-            p.cursor.vy *= 0.925
-            p.cursor.x += p.cursor.vx * 2
-            p.cursor.y += p.cursor.vy * 2
-            p.cursor.x = Math.min(100, Math.max(-100, p.cursor.x))
-            p.cursor.y = Math.min(100, Math.max(-100, p.cursor.y))
-          })
-        })
-      }
-      moved(point, withCursorForce = true) {
-        const coords = {
-          x: point.x + point.wave.x + (withCursorForce ? point.cursor.x : 0),
-          y: point.y + point.wave.y + (withCursorForce ? point.cursor.y : 0),
         }
-        coords.x = Math.round(coords.x * 10) / 10
-        coords.y = Math.round(coords.y * 10) / 10
-        return coords
-      }
-      drawLines() {
-        const { lines, moved, paths } = this
-        lines.forEach((points, lIndex) => {
-          let p1 = moved(points[0], false)
-          let d = `M ${p1.x} ${p1.y}`
-          points.forEach((p, pIndex) => {
-            if (pIndex === 0) return;
-            const isLast = pIndex === points.length - 1
-            const pMoved = moved(p, !isLast)
-            d += `L ${pMoved.x} ${pMoved.y}`
-          })
-          paths[lIndex].setAttribute('d', d)
-        })
-      }
-      tick(time) {
-        const { mouse } = this
-        mouse.sx += (mouse.x - mouse.sx) * 0.1
-        mouse.sy += (mouse.y - mouse.sy) * 0.1
-        const dx = mouse.x - mouse.lx
-        const dy = mouse.y - mouse.ly
-        const d = Math.hypot(dx, dy)
-        mouse.v = d
-        mouse.vs += (d - mouse.vs) * 0.1
-        mouse.vs = Math.min(100, mouse.vs)
-        mouse.lx = mouse.x
-        mouse.ly = mouse.y
-        mouse.a = Math.atan2(dy, dx)
-        this.style.setProperty('--x', `${mouse.sx}px`)
-        this.style.setProperty('--y', `${mouse.sy}px`)
-        this.movePoints(time)
-        this.drawLines()
-        requestAnimationFrame(this.tick.bind(this))
-      }
-    }
-    customElements.define('a-waves', AWaves)
-
-    // 留言功能
-    document.addEventListener('DOMContentLoaded', function() {
-        loadMessages();
-        
-        const messageForm = document.getElementById('messageForm');
-        if (messageForm) {
-            messageForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                submitMessage();
-            });
-        }
-    });
-
-    async function submitMessage() {
-        const name = document.getElementById('msgName').value;
-        const nickname = document.getElementById('msgNickname').value;
-        const message = document.getElementById('msgContent').value;
-        
-        try {
-            //const response = await fetch('/api/messages', {
-            const response = await fetch(`${ETF_BACKEND_API}/api/messages`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name, nickname, message }),
-            });
-            
-            const result = await response.json();
-            document.getElementById('messageStatus').textContent = result.message || '留言发送成功！';
-            document.getElementById('messageForm').reset();
-            loadMessages(); // 重新加载留言
-        } catch (error) {
-            document.getElementById('messageStatus').textContent = '发送失败，请稍后重试。';
-            console.error('Error:', error);
-        }
-    }
-
-    async function loadMessages() {
-        try {
-            //const response = await fetch('/api/messages');
-            const response = await fetch(`${ETF_BACKEND_API}/api/messages`);
-            const data = await response.json();
-            const container = document.getElementById('messagesContainer');
-            container.innerHTML = '';
-            
-            data.messages.forEach(msg => {
-                const msgDiv = document.createElement('div');
-                msgDiv.style.cssText = `
-                    background: rgba(255, 255, 255, 0.05);
-                    border: 1px solid #17f700;
-                    border-radius: 8px;
-                    padding: 1rem;
-                    margin-bottom: 1rem;
-                `;
-                msgDiv.innerHTML = `
-                    <div style="color: #fff; font-weight: bold;">${msg.name}${msg.nickname ? ` (${msg.nickname})` : ''}</div>
-                    <div style="color: #17f700; margin: 0.5rem 0;">${msg.message}</div>
-                    <div style="color: #666; font-size: 0.8rem;">${new Date(msg.timestamp).toLocaleString()}</div>
-                `;
-                container.appendChild(msgDiv);
-            });
-        } catch (error) {
-            console.error('Error loading messages:', error);
-        }
-    }
-
-    // 基金报告邮件接口调用：请把 URL 改为你后端部署地址（例如 https://your-backend-railway-url）
-    const ETF_BACKEND_API = 'https://webbacken-production.up.railway.app';
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const fundReportForm = document.getElementById('fundReportForm');
-        if (fundReportForm) {
-            fundReportForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const email = document.getElementById('fundEmail').value.trim();
-                const fundCode = document.getElementById('fundCode').value.trim();
-                const fundMarket = document.getElementById('fundMarket').value;
-                const text = document.getElementById('fundMessage').value.trim();
-                const statusEl = document.getElementById('fundReportStatus');
-
-                if (!email) {
-                    statusEl.textContent = '请填写收件邮箱。';
-                    return;
-                }
-
-                statusEl.textContent = '正在请求发送报告，请稍候...';
-
-                // 组合基金代码和市场
-                const fullFundCode = fundCode ? `${fundCode}.${fundMarket.toUpperCase()}` : undefined;
-
-                try {
-                    const resp = await fetch(`${ETF_BACKEND_API}/api/send_report`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            emails: [email],
-                            fund_code: fullFundCode,
-                            note: text || undefined,
-                        }),
-                    });
-
-                    const result = await resp.json();
-                    if (resp.ok) {
-                        statusEl.textContent = '请求已发送，后台正在处理邮件：' + (result.message || '请到邮箱查看。');
-                        fundReportForm.reset();
-                    } else {
-                        statusEl.textContent = '发送失败：' + (result.error || '请稍后再试。');
+        movePoints(time) {
+            const { lines, mouse, noise } = this;
+            lines.forEach((points) => {
+                points.forEach((p) => {
+                    const move = noise.perlin2((p.x + time * 0.0125) * 0.002, (p.y + time * 0.005) * 0.0015) * 12;
+                    p.wave.x = Math.cos(move) * 32;
+                    p.wave.y = Math.sin(move) * 16;
+                    const dx = p.x - mouse.sx, dy = p.y - mouse.sy, d = Math.hypot(dx, dy), l = Math.max(175, mouse.vs);
+                    if (d < l) {
+                        const s = 1 - d / l, f = Math.cos(d * 0.001) * s;
+                        p.cursor.vx += Math.cos(mouse.a) * f * l * mouse.vs * 0.00065;
+                        p.cursor.vy += Math.sin(mouse.a) * f * l * mouse.vs * 0.00065;
                     }
-                } catch (err) {
-                    statusEl.textContent = '网络异常，请检查后端是否可用。';
-                    console.error(err);
-                }
+                    p.cursor.vx += (0 - p.cursor.x) * 0.005;
+                    p.cursor.vy += (0 - p.cursor.y) * 0.005;
+                    p.cursor.vx *= 0.925; p.cursor.vy *= 0.925;
+                    p.cursor.x += p.cursor.vx * 2; p.cursor.y += p.cursor.vy * 2;
+                    p.cursor.x = Math.min(100, Math.max(-100, p.cursor.x));
+                    p.cursor.y = Math.min(100, Math.max(-100, p.cursor.y));
+                });
             });
         }
+        moved(point, withCursorForce = true) {
+            const coords = { x: point.x + point.wave.x + (withCursorForce ? point.cursor.x : 0), y: point.y + point.wave.y + (withCursorForce ? point.cursor.y : 0) };
+            coords.x = Math.round(coords.x * 10) / 10; coords.y = Math.round(coords.y * 10) / 10;
+            return coords;
+        }
+        drawLines() {
+            const { lines, moved, paths } = this;
+            lines.forEach((points, lIndex) => {
+                let p1 = moved(points[0], false);
+                let d = `M ${p1.x} ${p1.y}`;
+                points.forEach((p, pIndex) => {
+                    if (pIndex === 0) return;
+                    const isLast = pIndex === points.length - 1;
+                    const pMoved = moved(p, !isLast);
+                    d += `L ${pMoved.x} ${pMoved.y}`;
+                });
+                paths[lIndex].setAttribute('d', d);
+            });
+        }
+        tick(time) {
+            const { mouse } = this;
+            mouse.sx += (mouse.x - mouse.sx) * 0.1;
+            mouse.sy += (mouse.y - mouse.sy) * 0.1;
+            const dx = mouse.x - mouse.lx, dy = mouse.y - mouse.ly, d = Math.hypot(dx, dy);
+            mouse.v = d;
+            mouse.vs += (d - mouse.vs) * 0.1;
+            mouse.vs = Math.min(100, mouse.vs);
+            mouse.lx = mouse.x; mouse.ly = mouse.y;
+            mouse.a = Math.atan2(dy, dx);
+            this.style.setProperty('--x', `${mouse.sx}px`);
+            this.style.setProperty('--y', `${mouse.sy}px`);
+            this.movePoints(time);
+            this.drawLines();
+            requestAnimationFrame(this.tick.bind(this));
+        }
+    }
+    customElements.define('a-waves', AWaves);
+
+    // 留言与基金后端接口
+    const ETF_BACKEND_API = 'https://webbacken-production.up.railway.app';
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageForm = document.getElementById('messageForm');
+        if (messageForm) messageForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('msg2Name').value;
+            const nickname = document.getElementById('msg2Nickname').value;
+            const message = document.getElementById('msg2Content').value;
+            
+            if (!message || message.trim() === "") {
+                document.getElementById('messageStatus').textContent = '留言内容不能为空！';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${ETF_BACKEND_API}/api/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, nickname, message }) });
+                const result = await response.json();
+                document.getElementById('messageStatus').textContent = result.message || '留言发送成功！';
+                document.getElementById('messageForm').reset();
+                loadMessages();
+            } catch (error) { document.getElementById('messageStatus').textContent = '发送失败，请稍后重试。'; console.error(error); }
+        });
+        async function loadMessages() {
+            try {
+                const response = await fetch(`${ETF_BACKEND_API}/api/messages`);
+                const data = await response.json();
+                const container = document.getElementById('messagesContainer');
+                if (!container) return;
+                container.innerHTML = '';
+                data.messages.forEach(msg => {
+                    const msgDiv = document.createElement('div');
+                    msgDiv.style.cssText = `background: rgba(255,255,255,0.05); border:1px solid #17f700; border-radius:8px; padding:1rem; margin-bottom:1rem;`;
+                    msgDiv.innerHTML = `<div style="color:#fff; font-weight:bold;">${msg.name}${msg.nickname ? ` (${msg.nickname})` : ''}</div><div style="color:#17f700; margin:0.5rem 0;">${msg.message}</div><div style="color:#666; font-size:0.8rem;">${new Date(msg.timestamp).toLocaleString()}</div>`;
+                    container.appendChild(msgDiv);
+                });
+            } catch (error) { console.error('Error loading messages:', error); }
+        }
+        const fundReportForm = document.getElementById('fundReportForm');
+        if (fundReportForm) fundReportForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('fundEmail').value.trim();
+            const fundCode = document.getElementById('fundCode').value.trim();
+            const fundMarket = document.getElementById('fundMarket').value;
+            const text = document.getElementById('fundMessage').value.trim();
+            const statusEl = document.getElementById('fundReportStatus');
+            if (!email) { statusEl.textContent = '请填写收件邮箱。'; return; }
+            statusEl.textContent = '正在请求发送报告，请稍候...';
+            const fullFundCode = fundCode ? `${fundCode}.${fundMarket.toUpperCase()}` : undefined;
+            try {
+                const resp = await fetch(`${ETF_BACKEND_API}/api/send_report`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ emails: [email], fund_code: fullFundCode, note: text || undefined }) });
+                const result = await resp.json();
+                if (resp.ok) statusEl.textContent = '请求已发送，后台正在处理邮件：' + (result.message || '请到邮箱查看。');
+                else statusEl.textContent = '发送失败：' + (result.error || '请稍后再试。');
+            } catch (err) { statusEl.textContent = '网络异常，请检查后端是否可用。'; console.error(err); }
+        });
+        loadMessages();
     });
 </script>
 </body>

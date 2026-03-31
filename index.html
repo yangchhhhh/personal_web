@@ -188,7 +188,7 @@
         }
         .poker-container {
             position: relative;
-            width: 55rem;
+            width: 68rem; /* 增加宽度以适应更多卡牌 */
             height: 35rem;
         }
         .poker {
@@ -713,6 +713,250 @@
         .modal-content h3 { font-size:2rem; color:#b45a2c; margin-bottom:0.75rem; }
         .modal-content p { font-size:1.1rem; color:#4f3a28; line-height:1.5; margin-bottom:1.5rem; }
         .modal-close { background:#d48c54; border:none; padding:0.8rem 2rem; border-radius:60px; font-size:1rem; font-weight:bold; color:white; cursor:pointer; transition:0.2s; }
+    
+        /* ========== 预期校准器专用样式 ========== */
+        #page-expected .expected-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            background: linear-gradient(145deg, #f4f7fc 0%, #eef2f5 100%);
+            min-height: 100vh;
+        }
+        #page-expected .expected-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        #page-expected .expected-header h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #1e4b6e, #2c7da0);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        #page-expected .expected-header p {
+            color: #4a627a;
+            margin-top: 0.5rem;
+        }
+        #page-expected .expected-badge-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.6rem;
+            margin-top: 1rem;
+        }
+        #page-expected .expected-badge {
+            background: rgba(44,125,160,0.12);
+            backdrop-filter: blur(2px);
+            padding: 0.25rem 0.9rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #1e5a76;
+            border: 1px solid rgba(44,125,160,0.3);
+        }
+        #page-expected .expected-dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+        }
+        #page-expected .expected-card {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.05);
+            padding: 1.6rem 1.8rem;
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+        #page-expected .expected-left-panel {
+            flex: 2;
+            min-width: 280px;
+        }
+        #page-expected .expected-right-panel {
+            flex: 1.5;
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.8rem;
+        }
+        #page-expected .expected-flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            margin-bottom: 0.8rem;
+        }
+        #page-expected .expected-metric-row {
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #e2edf2;
+            padding-bottom: 1.2rem;
+        }
+        #page-expected .expected-metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+        #page-expected .expected-metric-name {
+            font-weight: 650;
+            font-size: 1rem;
+            color: #1f4e6e;
+        }
+        #page-expected .expected-metric-value {
+            font-family: monospace;
+            font-size: 0.9rem;
+            background: #eef3f7;
+            padding: 0.2rem 0.6rem;
+            border-radius: 30px;
+            color: #0f3b4f;
+        }
+        #page-expected .expected-slider-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #page-expected .expected-slider-group input[type="range"] {
+            flex: 2;
+            min-width: 140px;
+            height: 5px;
+            border-radius: 10px;
+            background: #cbdde6;
+        }
+        #page-expected .expected-number-input {
+            width: 70px;
+            text-align: center;
+            background: white;
+            border: 1px solid #cbdde6;
+            border-radius: 40px;
+            padding: 0.3rem 0;
+        }
+        #page-expected .expected-weight-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            background: #f8fafc;
+            padding: 0.5rem 0.8rem;
+            border-radius: 1.2rem;
+        }
+        #page-expected .expected-weight-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #4f6f8a;
+            min-width: 45px;
+        }
+        #page-expected .expected-reset-btn {
+            background: none;
+            border: 1px solid #b9d0dd;
+            border-radius: 40px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.7rem;
+            cursor: pointer;
+            color: #2c7da0;
+        }
+        #page-expected .expected-reset-btn:hover {
+            background: #e2f0f5;
+        }
+        #page-expected .expected-feedback-item {
+            margin-bottom: 1.4rem;
+        }
+        #page-expected .expected-feedback-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #page-expected .expected-radio-group,
+        #page-expected .expected-select-group {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-top: 0.3rem;
+        }
+        #page-expected .expected-radio-group label,
+        #page-expected .expected-select-group select {
+            background: #f1f6f9;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: 1px solid #d4e2ea;
+        }
+        #page-expected .expected-select-group select {
+            background: white;
+        }
+        #page-expected .expected-sensitivity {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        #page-expected .expected-highlight {
+            background: #e9f3f8;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            margin-top: 0.8rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-align: center;
+        }
+        #page-expected .expected-threshold-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        #page-expected .expected-threshold-item {
+            flex: 1;
+        }
+        #page-expected .expected-result-card {
+            background: linear-gradient(115deg, #ffffff 0%, #fefefe 100%);
+            border-radius: 1.8rem;
+            padding: 1.4rem;
+            margin-top: 0.5rem;
+        }
+        #page-expected .expected-expect-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            font-family: monospace;
+            color: #1f6392;
+            line-height: 1;
+        }
+        #page-expected .expected-advice {
+            background: #eef2f5;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        #page-expected .expected-sub-advice {
+            font-size: 0.85rem;
+            color: #2c697e;
+            margin-top: 0.7rem;
+            border-left: 3px solid #2c7da0;
+            padding-left: 0.8rem;
+        }
+        #page-expected .expected-hr {
+            margin: 1rem 0;
+            border: none;
+            height: 1px;
+            background: linear-gradient(to right, #cde0e8, transparent);
+        }
+        #page-expected .expected-debug {
+            font-size: 0.7rem;
+            color: #4f6f8a;
+        }
+        @media (max-width: 780px) {
+            #page-expected .expected-card {
+                padding: 1.2rem;
+            }
+            #page-expected .expected-dashboard {
+                gap: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -746,6 +990,7 @@
                 <div class="poker" data-page="finance" style="background:#10b981;"><h2 style="color:#fff">量化投资</h2></div>
                 <div class="poker" data-page="game" style="background:#17f700;"><h2 style="color:#0d1117">个人游戏</h2></div>
                 <div class="poker" data-page="memory" style="background:#ffb347;"><h2 style="color:#4a2a1a">温馨回忆录</h2></div>
+                <div class="poker" data-page="expected" style="background:#6c5ce7;"><h2 style="color:#fff">预期校准器</h2></div>
                 <div class="poker_top" id="pokerTopClick"></div>
             </div>
             <button class="enter-btn" id="enterCommandBtn">执行指令 : 个人游戏</button>
@@ -890,6 +1135,98 @@
     </div>
 </div>
 
+<!-- ========================= 页面7: 预期校准器 ========================= -->
+<div id="page-expected" class="page">
+    <div class="expected-container">
+        <div class="expected-header">
+            <h1>⚖️ 预期校准器</h1>
+            <p>动态拆解 · 修正偏差 · 聚焦自我实现与亲密关系</p>
+            <div class="expected-badge-group">
+                <span class="expected-badge">✓ 权重参数化</span>
+                <span class="expected-badge">✓ 外部修正系数+裁剪</span>
+                <span class="expected-badge">✓ 阈值灵活调节</span>
+                <span class="expected-badge">✓ 个性化低分建议</span>
+                <span class="expected-badge">✓ 归一化计算引擎</span>
+            </div>
+        </div>
+        <div class="expected-dashboard">
+            <div class="expected-left-panel expected-card">
+                <div class="expected-flex-between">
+                    <h3>📊 多维指标 & 动态权重</h3>
+                    <button id="resetWeightsBtn" class="expected-reset-btn">⟳ 重置默认权重</button>
+                </div>
+                <div id="expectedMetricsContainer"></div>
+                <div class="expected-highlight">💡 权重自动归一化（总和100%），实时影响最终得分</div>
+            </div>
+            <div class="expected-right-panel">
+                <div class="expected-card">
+                    <h3>🌐 外部反馈修正</h3>
+                    <div class="expected-feedback-item">
+                        <div class="expected-feedback-title">🗣️ 毒舌网友评价</div>
+                        <div class="expected-radio-group" id="feedbackNetizen">
+                            <label><input type="radio" name="netizen" value="negative"> 负面 (-0.1)</label>
+                            <label><input type="radio" name="netizen" value="neutral" checked> 中性 (0)</label>
+                            <label><input type="radio" name="netizen" value="positive"> 正面 (+0.1)</label>
+                        </div>
+                    </div>
+                    <div class="expected-feedback-item">
+                        <div class="expected-feedback-title">👥 同龄人动态事件</div>
+                        <div class="expected-select-group">
+                            <select id="peerEvent">
+                                <option value="none">🚫 无影响</option>
+                                <option value="marry">💍 结婚 (-0.05)</option>
+                                <option value="postgraduate">📚 考研 (-0.05)</option>
+                                <option value="promotion">🚀 晋升 (+0.05)</option>
+                            </select>
+                        </div>
+                        <div class="expected-sensitivity">
+                            <span>敏感度系数</span>
+                            <input type="range" id="sensitivitySlider" min="0.5" max="1.5" step="0.01" value="1.0">
+                            <span id="sensitivityValue">1.00</span>
+                        </div>
+                    </div>
+                    <div class="expected-highlight" id="externalCoefficientDisplay">当前外部修正系数 = 1.00</div>
+                </div>
+                <div class="expected-card">
+                    <h3>🎯 核心需求 & 动态阈值</h3>
+                    <div class="expected-feedback-item">
+                        <div class="expected-feedback-title">❤️ 核心需求 (个性化建议)</div>
+                        <select id="coreNeed">
+                            <option value="self">🚀 自我实现 (技能/突破)</option>
+                            <option value="relation">💞 亲密关系 (连接/陪伴)</option>
+                            <option value="health">🧘 健康优先 (修复/平衡)</option>
+                            <option value="both" selected>✨ 自我实现 + 亲密关系</option>
+                        </select>
+                    </div>
+                    <div class="expected-threshold-row">
+                        <div class="expected-threshold-item">
+                            <div>🔽 修复模式阈值 (低)</div>
+                            <input type="range" id="lowThreshold" min="0.2" max="0.9" step="0.01" value="0.55">
+                            <span id="lowThVal">0.55</span>
+                        </div>
+                        <div class="expected-threshold-item">
+                            <div>🔼 保持节奏阈值 (高)</div>
+                            <input type="range" id="highThreshold" min="0.5" max="1.3" step="0.01" value="0.85">
+                            <span id="highThVal">0.85</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="expected-result-card">
+                    <div class="expected-flex-between">
+                        <span>📐 校准后预期值</span>
+                        <span>(加权得分 × 外部修正)</span>
+                    </div>
+                    <div class="expected-expect-value" id="finalExpect">0.00</div>
+                    <div class="expected-advice" id="mainAdvice">💡 等待数据计算...</div>
+                    <div id="personalAdvice" class="expected-sub-advice">基于低分项 + 核心需求生成个性化建议</div>
+                    <hr class="expected-hr">
+                    <div class="expected-debug" id="debugInfo">归一化权重 & 细分得分</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // ---------- 全局路由 & 单页切换核心 ----------
     const pages = {
@@ -899,7 +1236,8 @@
         projects: document.getElementById('page-projects'),
         relax: document.getElementById('page-relax'),
         finance: document.getElementById('page-finance'),
-        memory: document.getElementById('page-memory')
+        memory: document.getElementById('page-memory'),
+        expected: document.getElementById('page-expected') 
     };
     let currentPage = 'main';
     let globalLenis = null;
@@ -1239,8 +1577,13 @@
     const pokerDeck = document.getElementById('pokerDeck');
     let pokers = [...pokerDeck.querySelectorAll('.poker:not(.poker_top)')];
     const transforms = [
-        "rotate(-12deg) translate(0%, 0%)", "rotate(-7deg) translate(32%, -8%)", "rotate(-2deg) translate(60%, -15%)",
-        "rotate(3deg) translate(88%, -22%)", "rotate(8deg) translate(115%, -28%)", "rotate(12deg) translate(142%, -33%)"
+        "rotate(-14deg) translate(0%, 0%)",
+        "rotate(-9deg) translate(28%, -6%)",
+        "rotate(-4deg) translate(52%, -12%)",
+        "rotate(1deg) translate(76%, -18%)",
+        "rotate(6deg) translate(100%, -24%)",
+        "rotate(11deg) translate(124%, -30%)",
+        "rotate(16deg) translate(148%, -36%)"
     ];
     function updatePokerUI() {
         const bottomCard = pokers.pop();
@@ -1521,6 +1864,256 @@
         }
     }
     customElements.define('a-waves', AWaves);
+    // ==================== 预期校准器模块 ====================
+    (function() {
+        const METRICS = [
+            { id: "career", label: "📈 职业成长", unit: "完成度", min: 0, max: 1, step: 0.01, defaultWeight: 40,
+            valueGetter: (val) => parseFloat(val), displayVal: (v) => `${(v*100).toFixed(0)}%` },
+            { id: "skill", label: "⚙️ 技能突破", unit: "ROS/前后端掌握度", min: 0, max: 1, step: 0.01, defaultWeight: 30,
+            valueGetter: (val) => parseFloat(val), displayVal: (v) => `${(v*100).toFixed(0)}%` },
+            { id: "life", label: "🍳 生活质感", unit: "新菜式数量 (0~12)", min: 0, max: 12, step: 1, defaultWeight: 20,
+            valueGetter: (val) => Math.min(1, parseFloat(val) / 12), displayVal: (v) => `${parseFloat(v)} 道` },
+            { id: "mental", label: "🧠 心理状态", unit: "每周焦虑天数 (0~7)", min: 0, max: 7, step: 1, defaultWeight: 10,
+            valueGetter: (val) => 1 - (parseFloat(val) / 7), displayVal: (v) => `${parseFloat(v)} 天` }
+        ];
+
+        let metricRawValues = { career: 0.7, skill: 0.55, life: 4, mental: 2 };
+        let metricRawWeights = { career: 40, skill: 30, life: 20, mental: 10 };
+
+        function getNormalizedWeights() {
+            let total = metricRawWeights.career + metricRawWeights.skill + metricRawWeights.life + metricRawWeights.mental;
+            if (total === 0) total = 1;
+            return {
+                career: metricRawWeights.career / total,
+                skill: metricRawWeights.skill / total,
+                life: metricRawWeights.life / total,
+                mental: metricRawWeights.mental / total
+            };
+        }
+
+        function getMetricScores() {
+            return {
+                career: METRICS.find(m => m.id === "career").valueGetter(metricRawValues.career),
+                skill: METRICS.find(m => m.id === "skill").valueGetter(metricRawValues.skill),
+                life: METRICS.find(m => m.id === "life").valueGetter(metricRawValues.life),
+                mental: METRICS.find(m => m.id === "mental").valueGetter(metricRawValues.mental)
+            };
+        }
+
+        function computeWeightedScore() {
+            let scores = getMetricScores();
+            let weights = getNormalizedWeights();
+            return Math.min(1.0, Math.max(0, scores.career * weights.career + scores.skill * weights.skill + scores.life * weights.life + scores.mental * weights.mental));
+        }
+
+        function computeExternalFactor() {
+            let netizenValue = 0;
+            for (let radio of document.querySelectorAll('#feedbackNetizen input')) {
+                if (radio.checked) {
+                    netizenValue = radio.value === "negative" ? -0.1 : (radio.value === "positive" ? 0.1 : 0);
+                    break;
+                }
+            }
+            let peerBase = 0;
+            let peerVal = document.getElementById('peerEvent').value;
+            if (peerVal === "marry" || peerVal === "postgraduate") peerBase = -0.05;
+            else if (peerVal === "promotion") peerBase = 0.05;
+            let sensitivity = parseFloat(document.getElementById('sensitivitySlider').value);
+            let peerAdjusted = peerBase * sensitivity;
+            let factor = 1.0 + netizenValue + peerAdjusted;
+            return Math.min(1.3, Math.max(0.7, factor));
+        }
+
+        function computeFinalExpectation() {
+            return computeWeightedScore() * computeExternalFactor();
+        }
+
+        function getLowestMetric() {
+            let scores = getMetricScores();
+            let entries = [
+                { id: "career", name: "职业成长", score: scores.career },
+                { id: "skill", name: "技能突破", score: scores.skill },
+                { id: "life", name: "生活质感", score: scores.life },
+                { id: "mental", name: "心理状态", score: scores.mental }
+            ];
+            entries.sort((a,b) => a.score - b.score);
+            return entries[0];
+        }
+
+        function generatePersonalizedAdvice(lowMetric, coreNeed) {
+            const lowName = lowMetric.name;
+            const lowScore = lowMetric.score;
+            if (lowScore > 0.75) return "✨ 各项指标均衡，维持当下正循环即可。";
+            let needMap = { self: "自我实现", relation: "亲密关系", health: "健康优先", both: "自我实现+亲密关系" };
+            let currentNeed = needMap[coreNeed] || "自我实现+亲密关系";
+            if (lowName === "职业成长") {
+                if (currentNeed.includes("自我实现")) return "📌 拆解里程碑，每天专注2小时核心任务，邀请 mentor 反馈。";
+                if (currentNeed.includes("亲密关系")) return "🤝 与伴侣/好友同步职业进度，获得情感支持再攻坚。";
+                return "🗓️ 用番茄钟降低启动阻力，完成比完美更重要。";
+            }
+            if (lowName === "技能突破") {
+                if (currentNeed.includes("自我实现")) return "🧩 参加 ROS 训练营 / 组队项目，用实践带动突破。";
+                if (currentNeed.includes("亲密关系")) return "👥 找一位学习伙伴互相督促，每周两次结对编程/研讨。";
+                return "🎯 将大技能拆成每日30分钟微行动，降低焦虑感。";
+            }
+            if (lowName === "生活质感") {
+                if (currentNeed.includes("亲密关系")) return "🍲 邀请朋友一起尝试新菜谱，将烹饪变成社交时光。";
+                if (currentNeed.includes("健康优先")) return "🥗 从简单食谱开始，用味蕾愉悦恢复生活掌控感。";
+                return "🎨 每周设定一个「新体验日」，做饭、手作或逛菜市场。";
+            }
+            if (lowName === "心理状态") {
+                if (currentNeed.includes("健康优先")) return "🧘 启动修复模式：每日10分钟正念 + 减少社交媒体比较。";
+                if (currentNeed.includes("亲密关系")) return "💬 向信任的人坦诚焦虑，允许自己暂时不「高效」。";
+                return "🌿 优先保证睡眠与烹饪小确幸，焦虑天数下降就是进步。";
+            }
+            return "❤️ 关注自身节奏，每周回顾微小成就。";
+        }
+
+        function getMainAdvice(finalVal, lowTh, highTh) {
+            if (finalVal > highTh) return "🚀 保持节奏 · 尝试拓展社交（如ROS训练营组队/技术分享会），同时巩固优势领域。";
+            else if (finalVal > lowTh) return "🎯 聚焦核心任务 · 集中精力攻坚ROS项目或技能薄弱点，暂时减少非必要社交消耗。";
+            else return "🛠️ 启动「修复模式」：暂停高难度任务，用烹饪、运动、短途散步恢复心理能量，接纳暂时低预期。";
+        }
+
+        function updateDebugInfo() {
+            let weights = getNormalizedWeights();
+            let scores = getMetricScores();
+            const debugDiv = document.getElementById('debugInfo');
+            if (debugDiv) {
+                debugDiv.innerHTML = `⚖️ 归一化权重: 职业${(weights.career*100).toFixed(1)}% / 技能${(weights.skill*100).toFixed(1)}% / 生活${(weights.life*100).toFixed(1)}% / 心理${(weights.mental*100).toFixed(1)}% &nbsp;|&nbsp; 得分: ${(scores.career*100).toFixed(0)}% / ${(scores.skill*100).toFixed(0)}% / ${(scores.life*100).toFixed(0)}% / ${(scores.mental*100).toFixed(0)}%`;
+            }
+        }
+
+        function updateExternalDisplay() {
+            let factor = computeExternalFactor();
+            const extDiv = document.getElementById('externalCoefficientDisplay');
+            if (extDiv) extDiv.innerHTML = `🔁 当前外部修正系数 = ${factor.toFixed(3)} (限幅0.7~1.3)`;
+        }
+
+        function refreshAll() {
+            let lowTh = parseFloat(document.getElementById('lowThreshold').value);
+            let highTh = parseFloat(document.getElementById('highThreshold').value);
+            let finalVal = computeFinalExpectation();
+            let coreNeed = document.getElementById('coreNeed').value;
+            let lowest = getLowestMetric();
+            const finalSpan = document.getElementById('finalExpect');
+            const mainAdviceDiv = document.getElementById('mainAdvice');
+            const personalAdviceDiv = document.getElementById('personalAdvice');
+            if (finalSpan) finalSpan.innerText = finalVal.toFixed(3);
+            if (mainAdviceDiv) mainAdviceDiv.innerHTML = `💡 ${getMainAdvice(finalVal, lowTh, highTh)}`;
+            if (personalAdviceDiv) personalAdviceDiv.innerHTML = `🔍 低分项「${lowest.name}」得分${(lowest.score*100).toFixed(0)}% · ${generatePersonalizedAdvice(lowest, coreNeed)}`;
+            updateDebugInfo();
+            updateExternalDisplay();
+        }
+
+        function renderMetrics() {
+            const container = document.getElementById('expectedMetricsContainer');
+            if (!container) return;
+            container.innerHTML = "";
+            METRICS.forEach(metric => {
+                const rawVal = metricRawValues[metric.id];
+                const rawWeight = metricRawWeights[metric.id];
+                const displayVal = metric.displayVal ? metric.displayVal(rawVal) : rawVal;
+                const metricDiv = document.createElement("div");
+                metricDiv.className = "expected-metric-row";
+                metricDiv.innerHTML = `
+                    <div class="expected-metric-header">
+                        <span class="expected-metric-name">${metric.label}</span>
+                        <span class="expected-metric-value" id="val-${metric.id}">${metric.unit}: ${displayVal}</span>
+                    </div>
+                    <div class="expected-slider-group">
+                        <input type="range" id="slider-${metric.id}" min="${metric.min}" max="${metric.max}" step="${metric.step}" value="${rawVal}">
+                        <input type="number" id="num-${metric.id}" class="expected-number-input" step="${metric.step}" value="${rawVal}" style="width:70px">
+                    </div>
+                    <div class="expected-weight-control">
+                        <span class="expected-weight-label">权重 ⚖️</span>
+                        <input type="range" id="weight-${metric.id}" min="0" max="100" step="1" value="${rawWeight}" style="flex:1;">
+                        <span id="weightVal-${metric.id}" style="min-width:35px;">${rawWeight}</span>
+                    </div>
+                `;
+                container.appendChild(metricDiv);
+                const slider = metricDiv.querySelector(`#slider-${metric.id}`);
+                const number = metricDiv.querySelector(`#num-${metric.id}`);
+                const weightSlider = metricDiv.querySelector(`#weight-${metric.id}`);
+                const weightSpan = metricDiv.querySelector(`#weightVal-${metric.id}`);
+                const valueSpan = metricDiv.querySelector(`.expected-metric-value`);
+                const updateValue = () => {
+                    let newVal = parseFloat(slider.value);
+                    metricRawValues[metric.id] = newVal;
+                    number.value = newVal;
+                    let displayString = metric.displayVal ? metric.displayVal(newVal) : newVal;
+                    valueSpan.innerText = `${metric.unit}: ${displayString}`;
+                    refreshAll();
+                };
+                const updateWeight = () => {
+                    let newWeight = parseInt(weightSlider.value);
+                    metricRawWeights[metric.id] = newWeight;
+                    weightSpan.innerText = newWeight;
+                    refreshAll();
+                };
+                slider.addEventListener("input", updateValue);
+                number.addEventListener("input", (e) => {
+                    let v = parseFloat(e.target.value);
+                    if (isNaN(v)) v = metric.min;
+                    v = Math.min(metric.max, Math.max(metric.min, v));
+                    slider.value = v;
+                    updateValue();
+                });
+                weightSlider.addEventListener("input", updateWeight);
+            });
+        }
+
+        function resetWeights() {
+            METRICS.forEach(m => { metricRawWeights[m.id] = m.defaultWeight; });
+            renderMetrics();
+            refreshAll();
+        }
+
+        function bindExternalEvents() {
+            const netizenRadios = document.querySelectorAll('#feedbackNetizen input');
+            netizenRadios.forEach(radio => radio.addEventListener("change", () => refreshAll()));
+            const peerEvent = document.getElementById('peerEvent');
+            if (peerEvent) peerEvent.addEventListener("change", () => refreshAll());
+            const sensitivitySlider = document.getElementById('sensitivitySlider');
+            if (sensitivitySlider) {
+                sensitivitySlider.addEventListener("input", (e) => {
+                    document.getElementById('sensitivityValue').innerText = parseFloat(e.target.value).toFixed(2);
+                    refreshAll();
+                });
+            }
+            const coreNeed = document.getElementById('coreNeed');
+            if (coreNeed) coreNeed.addEventListener("change", () => refreshAll());
+            const lowTh = document.getElementById('lowThreshold');
+            if (lowTh) {
+                lowTh.addEventListener("input", (e) => {
+                    document.getElementById('lowThVal').innerText = parseFloat(e.target.value).toFixed(2);
+                    refreshAll();
+                });
+            }
+            const highTh = document.getElementById('highThreshold');
+            if (highTh) {
+                highTh.addEventListener("input", (e) => {
+                    document.getElementById('highThVal').innerText = parseFloat(e.target.value).toFixed(2);
+                    refreshAll();
+                });
+            }
+            const resetBtn = document.getElementById('resetWeightsBtn');
+            if (resetBtn) resetBtn.addEventListener("click", resetWeights);
+        }
+
+        function initExpectedCalibrator() {
+            if (!document.getElementById('expectedMetricsContainer')) return;
+            renderMetrics();
+            bindExternalEvents();
+            refreshAll();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initExpectedCalibrator);
+        } else {
+            initExpectedCalibrator();
+        }
+    })();
 
     // 留言与基金后端接口
     const ETF_BACKEND_API = 'https://webbacken-production.up.railway.app';

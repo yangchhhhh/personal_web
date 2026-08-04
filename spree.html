@@ -1,0 +1,3178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>💰 挥霍模拟器 · 终极统治</title>
+    <style>
+        /* ===== 全局 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --gold: #d4a74a;
+            --gold-light: #f0d080;
+            --gold-dark: #b8923a;
+            --bg-primary: #0a0810;
+            --bg-secondary: #13101a;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.08);
+            --text-primary: #f0ece4;
+            --text-secondary: #9a9080;
+            --text-gold: #e8c86a;
+            --border-gold: rgba(212, 167, 74, 0.2);
+            --shadow-gold: 0 8px 32px rgba(212, 167, 74, 0.06);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --rarity-common: #8a8a8a;
+            --rarity-uncommon: #4fc3f7;
+            --rarity-rare: #ab47bc;
+            --rarity-epic: #ff6f00;
+            --rarity-legendary: #ff1744;
+        }
+        html {
+            font-size: 15px;
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: var(--font);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 16px;
+            background-image: radial-gradient(ellipse at 20% 10%, rgba(212, 167, 74, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 90%, rgba(212, 167, 74, 0.03) 0%, transparent 50%);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 8px;
+        }
+        .app {
+            max-width: 1400px;
+            width: 100%;
+            background: var(--bg-secondary);
+            border-radius: 32px;
+            padding: 24px 28px 28px;
+            border: 1px solid var(--border-gold);
+            box-shadow: var(--shadow-gold), 0 20px 60px rgba(0, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+        }
+        .app::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            left: -20%;
+            width: 140%;
+            height: 140%;
+            background: radial-gradient(ellipse at 30% 20%, rgba(212, 167, 74, 0.015) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-gold);
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .logo .icon {
+            font-size: 1.8rem;
+            filter: drop-shadow(0 0 20px rgba(212, 167, 74, 0.2));
+        }
+        .logo .sub {
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-left: 2px;
+        }
+        .header-stats {
+            display: flex;
+            align-items: center;
+            gap: 16px 28px;
+            flex-wrap: wrap;
+            background: rgba(212, 167, 74, 0.04);
+            padding: 6px 20px 6px 18px;
+            border-radius: 60px;
+            border: 1px solid var(--border-gold);
+        }
+        .stat-badge {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .stat-badge .num {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-badge .num.gold {
+            color: var(--text-gold);
+        }
+        .stat-badge .num.danger {
+            color: #ff6b6b;
+        }
+        .balance-amount {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-gold);
+            font-variant-numeric: tabular-nums;
+            min-width: 100px;
+            text-align: right;
+            transition: color 0.3s;
+        }
+        .balance-amount.low {
+            color: #ff6b6b;
+        }
+        .balance-amount.zero {
+            color: #ff4444;
+            animation: pulse-danger 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse-danger {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(0.97);
+            }
+        }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding-bottom: 2px;
+        }
+        .tab-btn {
+            padding: 10px 24px;
+            border-radius: 40px 40px 0 0;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+            letter-spacing: 0.03em;
+            position: relative;
+        }
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .tab-btn.active {
+            color: var(--text-gold);
+            background: rgba(212, 167, 74, 0.08);
+        }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background: var(--gold);
+            border-radius: 4px;
+        }
+        .tab-btn .badge {
+            display: inline-block;
+            background: rgba(212, 167, 74, 0.2);
+            color: var(--text-gold);
+            font-size: 0.65rem;
+            padding: 0 8px;
+            border-radius: 20px;
+            margin-left: 6px;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+            position: relative;
+            z-index: 2;
+            animation: fadeSlide 0.4s ease-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== 商店 ===== */
+        .shop-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+            align-items: center;
+        }
+        .cat-btn {
+            padding: 6px 18px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+        }
+        .cat-btn:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-primary);
+        }
+        .cat-btn.active {
+            background: rgba(212, 167, 74, 0.12);
+            border-color: var(--gold);
+            color: var(--text-gold);
+        }
+        .special-btn {
+            padding: 6px 18px;
+            border-radius: 40px;
+            border: 1px solid var(--border-gold);
+            background: rgba(212, 167, 74, 0.08);
+            color: var(--text-gold);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+            margin-left: auto;
+        }
+        .special-btn:hover {
+            background: rgba(212, 167, 74, 0.2);
+            transform: scale(1.02);
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+        }
+        .product-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 18px 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            backdrop-filter: blur(4px);
+            cursor: default;
+        }
+        .product-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(212, 167, 74, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+        .product-card .emoji {
+            font-size: 2.4rem;
+            margin-bottom: 6px;
+        }
+        .product-card .name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            line-height: 1.3;
+            margin-bottom: 2px;
+        }
+        .product-card .rarity {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 1px 12px;
+            border-radius: 20px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .product-card .rarity.common {
+            color: var(--rarity-common);
+            background: rgba(138, 138, 138, 0.15);
+        }
+        .product-card .rarity.uncommon {
+            color: var(--rarity-uncommon);
+            background: rgba(79, 195, 247, 0.15);
+        }
+        .product-card .rarity.rare {
+            color: var(--rarity-rare);
+            background: rgba(171, 71, 188, 0.15);
+        }
+        .product-card .rarity.epic {
+            color: var(--rarity-epic);
+            background: rgba(255, 111, 0, 0.15);
+        }
+        .product-card .rarity.legendary {
+            color: var(--rarity-legendary);
+            background: rgba(255, 23, 68, 0.15);
+            animation: glow-legend 2s ease-in-out infinite;
+        }
+        @keyframes glow-legend {
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(255, 23, 68, 0.1);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 23, 68, 0.25);
+            }
+        }
+        .product-card .price {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-gold);
+            margin-bottom: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+        .buy-btn {
+            width: 100%;
+            padding: 9px 0;
+            border: none;
+            border-radius: 40px;
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+            color: #0c0a0f;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+            letter-spacing: 0.04em;
+        }
+        .buy-btn:hover:not(:disabled) {
+            transform: scale(1.03);
+            box-shadow: 0 4px 24px rgba(212, 167, 74, 0.3);
+        }
+        .buy-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+        .buy-btn:disabled {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .product-card.insufficient {
+            opacity: 0.5;
+            filter: grayscale(0.5);
+        }
+        .product-card.insufficient .buy-btn {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        /* ===== 盲盒 & 投资 ===== */
+        .blindbox-section {
+            margin-bottom: 20px;
+            padding: 16px 20px;
+            background: rgba(212, 167, 74, 0.06);
+            border-radius: var(--radius);
+            border: 1px dashed var(--border-gold);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .blindbox-section .bb-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-gold);
+        }
+        .blindbox-section .bb-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .bb-btn {
+            padding: 8px 24px;
+            border-radius: 40px;
+            border: none;
+            background: linear-gradient(135deg, #ff6f00, #ff1744);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+            box-shadow: 0 0 20px rgba(255, 23, 68, 0.2);
+        }
+        .bb-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(255, 23, 68, 0.4);
+        }
+        .bb-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .invest-section {
+            margin-top: 20px;
+            padding: 16px 20px;
+            background: rgba(79, 195, 247, 0.06);
+            border-radius: var(--radius);
+            border: 1px solid rgba(79, 195, 247, 0.15);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .invest-section .inv-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #4fc3f7;
+        }
+        .invest-section .inv-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .inv-btn {
+            padding: 8px 24px;
+            border-radius: 40px;
+            border: 1px solid #4fc3f7;
+            background: transparent;
+            color: #4fc3f7;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+        }
+        .inv-btn:hover:not(:disabled) {
+            background: rgba(79, 195, 247, 0.12);
+        }
+        .inv-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .inv-status {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-left: 8px;
+        }
+
+        /* ===== 藏品 ===== */
+        .collection-stats {
+            display: flex;
+            gap: 24px 40px;
+            flex-wrap: wrap;
+            padding: 12px 0 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 18px;
+        }
+        .collection-stats .stat-item {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .collection-stats .stat-item .num {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .collection-stats .stat-item .num.gold {
+            color: var(--text-gold);
+        }
+        .collection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+        .collection-item {
+            background: var(--bg-card);
+            border-radius: var(--radius-sm);
+            padding: 14px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+        }
+        .collection-item:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(212, 167, 74, 0.15);
+            transform: translateY(-2px);
+        }
+        .collection-item .emoji {
+            font-size: 2rem;
+        }
+        .collection-item .name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin: 4px 0 2px;
+        }
+        .collection-item .meta {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+        }
+        .collection-item .qty {
+            font-size: 0.7rem;
+            color: var(--text-gold);
+            font-weight: 600;
+            margin-top: 4px;
+            background: rgba(212, 167, 74, 0.1);
+            padding: 0 12px;
+            border-radius: 20px;
+        }
+        .collection-empty {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* ===== 社交 ===== */
+        .feed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 460px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+        .feed-item {
+            background: var(--bg-card);
+            border-radius: var(--radius-sm);
+            padding: 14px 18px;
+            border-left: 3px solid var(--gold-dark);
+            animation: slide-in 0.3s ease-out;
+        }
+        @keyframes slide-in {
+            from {
+                opacity: 0;
+                transform: translateX(-12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .feed-item .feed-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .feed-item .feed-user {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        .feed-item .feed-user .avatar {
+            margin-right: 6px;
+        }
+        .feed-item .feed-time {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+        .feed-item .feed-content {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 4px 0 8px;
+        }
+        .feed-item .feed-content strong {
+            color: var(--text-gold);
+            font-weight: 600;
+        }
+        .feed-item .feed-actions {
+            display: flex;
+            gap: 16px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .feed-item .feed-actions span {
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .feed-item .feed-actions span:hover {
+            color: var(--text-gold);
+        }
+        .feed-empty {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* ===== 二手市场 ===== */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .market-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-sm);
+            padding: 16px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .market-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(212, 167, 74, 0.12);
+        }
+        .market-card .emoji {
+            font-size: 2rem;
+        }
+        .market-card .name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin: 4px 0 2px;
+        }
+        .market-card .seller {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+        .market-card .m-price {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-gold);
+            margin: 6px 0 10px;
+        }
+        .market-card .btn-buy-used {
+            padding: 6px 20px;
+            border-radius: 40px;
+            border: 1px solid var(--border-gold);
+            background: transparent;
+            color: var(--text-gold);
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+        }
+        .market-card .btn-buy-used:hover:not(:disabled) {
+            background: rgba(212, 167, 74, 0.12);
+            border-color: var(--gold);
+        }
+        .market-card .btn-buy-used:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .market-empty {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-secondary);
+        }
+        .my-listings {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .my-listings h4 {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 400;
+            letter-spacing: 0.04em;
+        }
+        .listing-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+        .listing-item .l-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .listing-item .l-price {
+            color: var(--text-gold);
+            font-weight: 600;
+        }
+        .listing-item .btn-delist {
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 2px 12px;
+            border-radius: 20px;
+            transition: var(--transition);
+            font-family: var(--font);
+        }
+        .listing-item .btn-delist:hover {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.06);
+        }
+        .recent-sales {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .recent-sales h4 {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 400;
+            letter-spacing: 0.04em;
+        }
+        .sale-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .sale-item .sale-highlight {
+            color: var(--text-gold);
+            font-weight: 600;
+        }
+        .premium-tag {
+            background: #ff1744;
+            color: #fff;
+            font-size: 0.55rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* ===== 垄断板块 ===== */
+        .monopoly-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .monopoly-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 18px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .monopoly-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(212, 167, 74, 0.15);
+            transform: translateY(-3px);
+        }
+        .monopoly-card .m-icon {
+            font-size: 2.6rem;
+            margin-bottom: 4px;
+        }
+        .monopoly-card .m-name {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .monopoly-card .m-detail {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin: 4px 0 8px;
+        }
+        .monopoly-card .m-prosperity {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 6px 0;
+        }
+        .monopoly-card .m-prosperity .fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s;
+            background: linear-gradient(90deg, #ff6b6b, #f0d080);
+        }
+        .monopoly-card .m-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .monopoly-card .m-actions button {
+            padding: 4px 14px;
+            border-radius: 30px;
+            border: 1px solid var(--border-gold);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+        }
+        .monopoly-card .m-actions button:hover {
+            background: rgba(212, 167, 74, 0.08);
+            color: var(--text-gold);
+        }
+        .monopoly-card .m-actions button.primary {
+            border-color: var(--gold);
+            color: var(--text-gold);
+        }
+        .monopoly-card .m-actions button.danger {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+        .monopoly-card .m-shares {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin: 6px 0;
+        }
+
+        /* ===== 红灯区 ===== */
+        .redlight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .redlight-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 18px 14px;
+            border: 1px solid rgba(255, 107, 107, 0.15);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+        }
+        .redlight-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255, 107, 107, 0.3);
+            transform: translateY(-3px);
+        }
+        .redlight-card .rl-emoji {
+            font-size: 2.8rem;
+        }
+        .redlight-card .rl-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin: 4px 0 2px;
+        }
+        .redlight-card .rl-price {
+            font-size: 0.9rem;
+            color: var(--text-gold);
+            font-weight: 600;
+        }
+        .redlight-card .rl-btn {
+            margin-top: 8px;
+            padding: 6px 24px;
+            border-radius: 40px;
+            border: 1px solid #ff6b6b;
+            background: transparent;
+            color: #ff6b6b;
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+        }
+        .redlight-card .rl-btn:hover:not(:disabled) {
+            background: rgba(255, 107, 107, 0.08);
+        }
+        .redlight-card .rl-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .redlight-story {
+            margin-top: 16px;
+            padding: 16px 20px;
+            background: rgba(255, 107, 107, 0.06);
+            border-radius: var(--radius);
+            border-left: 4px solid #ff6b6b;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            min-height: 80px;
+            transition: all 0.4s;
+        }
+        .redlight-story .story-highlight {
+            color: var(--text-gold);
+            font-weight: 600;
+        }
+
+        /* ===== 弹窗 ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 800;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-gold);
+            border-radius: 24px;
+            padding: 32px 36px 28px;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            transform: scale(0.94) translateY(20px);
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            text-align: center;
+        }
+        .modal-overlay.open .modal-box {
+            transform: scale(1) translateY(0);
+        }
+        .modal-box .modal-emoji {
+            font-size: 3.4rem;
+            margin-bottom: 4px;
+        }
+        .modal-box .modal-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .modal-box .modal-rarity {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin: 4px 0 8px;
+        }
+        .modal-box .modal-price {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-gold);
+            margin: 6px 0 16px;
+            font-variant-numeric: tabular-nums;
+        }
+        .modal-box .modal-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 18px;
+        }
+        .modal-box .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .modal-box .modal-actions button {
+            padding: 10px 32px;
+            border-radius: 40px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+        }
+        .modal-box .modal-actions .btn-cancel {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+        }
+        .modal-box .modal-actions .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .modal-box .modal-actions .btn-confirm {
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+            color: #0c0a0f;
+        }
+        .modal-box .modal-actions .btn-confirm:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 24px rgba(212, 167, 74, 0.25);
+        }
+
+        /* ===== Toast ===== */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            pointer-events: none;
+            max-width: 90%;
+        }
+        .toast {
+            background: linear-gradient(135deg, #1a1620, #0c0a0f);
+            border: 1px solid var(--gold);
+            border-radius: 20px;
+            padding: 14px 28px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(212, 167, 74, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: auto;
+            font-size: 0.95rem;
+            backdrop-filter: blur(12px);
+            width: auto;
+            min-width: 200px;
+            max-width: 90%;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .toast .toast-icon {
+            font-size: 1.8rem;
+        }
+        .toast .toast-text strong {
+            color: var(--text-gold);
+        }
+        .toast .toast-sub {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 1px;
+        }
+
+        /* ===== 粒子 ===== */
+        .particle-container {
+            position: fixed;
+            pointer-events: none;
+            z-index: 900;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: particle-fly 1.2s ease-out forwards;
+            pointer-events: none;
+        }
+        @keyframes particle-fly {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty)) scale(0) rotate(720deg);
+            }
+        }
+        .flash-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 850;
+            background: radial-gradient(circle, rgba(212, 167, 74, 0.25) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        .flash-overlay.active {
+            opacity: 1;
+            transition: opacity 0.05s ease;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 820px) {
+            .app {
+                padding: 16px 14px 18px;
+                border-radius: 20px;
+            }
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .header-stats {
+                justify-content: space-around;
+                padding: 6px 12px;
+                border-radius: 40px;
+            }
+            .balance-amount {
+                font-size: 1.3rem;
+                min-width: 80px;
+                text-align: center;
+            }
+            .product-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 10px;
+            }
+            .collection-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            }
+            .market-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            }
+            .monopoly-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }
+            .redlight-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            }
+            .tab-btn {
+                padding: 8px 16px;
+                font-size: 0.75rem;
+            }
+            .modal-box {
+                padding: 24px 20px 22px;
+            }
+            .modal-box .modal-price {
+                font-size: 1.5rem;
+            }
+            .toast {
+                padding: 12px 20px;
+                font-size: 0.85rem;
+                min-width: 160px;
+            }
+            .toast .toast-icon {
+                font-size: 1.4rem;
+            }
+            .stat-badge .num {
+                font-size: 1rem;
+            }
+            .blindbox-section,
+            .invest-section {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .special-btn {
+                margin-left: 0;
+            }
+        }
+        @media (max-width: 480px) {
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .product-card {
+                padding: 12px 8px 12px;
+            }
+            .product-card .emoji {
+                font-size: 1.8rem;
+            }
+            .product-card .name {
+                font-size: 0.75rem;
+            }
+            .product-card .price {
+                font-size: 0.85rem;
+            }
+            .buy-btn {
+                font-size: 0.7rem;
+                padding: 7px 0;
+            }
+            .collection-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .collection-item {
+                padding: 10px 8px;
+            }
+            .collection-item .emoji {
+                font-size: 1.6rem;
+            }
+            .market-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .monopoly-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .redlight-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .header-stats {
+                flex-wrap: wrap;
+                gap: 6px 12px;
+                justify-content: center;
+            }
+            .balance-amount {
+                font-size: 1.1rem;
+                min-width: 60px;
+            }
+            .tab-btn {
+                padding: 6px 12px;
+                font-size: 0.7rem;
+            }
+            .tab-btn .badge {
+                font-size: 0.55rem;
+                padding: 0 6px;
+            }
+            .cat-btn {
+                padding: 4px 12px;
+                font-size: 0.7rem;
+            }
+            .modal-box .modal-actions button {
+                padding: 8px 20px;
+                font-size: 0.8rem;
+            }
+            .feed-item {
+                padding: 10px 12px;
+            }
+            .blindbox-section,
+            .invest-section {
+                padding: 12px 14px;
+            }
+            .bb-btn,
+            .inv-btn {
+                padding: 6px 16px;
+                font-size: 0.8rem;
+            }
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .text-glow {
+            text-shadow: 0 0 30px rgba(212, 167, 74, 0.05);
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+        .gap-4 {
+            gap: 4px;
+        }
+        .w-full {
+            width: 100%;
+        }
+        .rarity-common {
+            color: var(--rarity-common);
+        }
+        .rarity-uncommon {
+            color: var(--rarity-uncommon);
+        }
+        .rarity-rare {
+            color: var(--rarity-rare);
+        }
+        .rarity-epic {
+            color: var(--rarity-epic);
+        }
+        .rarity-legendary {
+            color: var(--rarity-legendary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app" id="app">
+
+        <!-- ===== 顶部 ===== -->
+        <header class="header">
+            <div class="logo">
+                <span class="icon">👑</span>
+                <span>挥霍模拟器</span>
+                <span class="sub">· 终极统治</span>
+            </div>
+            <div class="header-stats">
+                <div class="stat-badge">💰 余额 <span class="num gold" id="balanceDisplay">100,000,000</span></div>
+                <div class="stat-badge">💸 已消费 <span class="num gold" id="totalSpent">0</span></div>
+                <div class="stat-badge">📦 藏品 <span class="num" id="collectionCount">0</span></div>
+                <div class="stat-badge">📈 理财 <span class="num" id="investAmount">0</span></div>
+            </div>
+        </header>
+
+        <!-- ===== Tab 导航 ===== -->
+        <div class="tabs" id="tabNav">
+            <button class="tab-btn active" data-tab="shop">🛍️ 商店</button>
+            <button class="tab-btn" data-tab="collection">📦 藏品 <span class="badge" id="collectionBadge">0</span></button>
+            <button class="tab-btn" data-tab="social">💬 社交 <span class="badge" id="socialBadge">0</span></button>
+            <button class="tab-btn" data-tab="market">🔄 市场 <span class="badge" id="marketBadge">0</span></button>
+            <button class="tab-btn" data-tab="monopoly">🏛️ 垄断</button>
+            <button class="tab-btn" data-tab="redlight">🌙 红灯区</button>
+        </div>
+
+        <!-- ===== 商店 Tab ===== -->
+        <div class="tab-content active" id="tab-shop">
+            <div class="blindbox-section">
+                <div>
+                    <span class="bb-title">🎁 盲盒抽奖</span>
+                    <span class="bb-desc">消耗 ¥100,000 随机获得一件商品，可能血赚！</span>
+                </div>
+                <button class="bb-btn" id="blindboxBtn">🎲 抽一个</button>
+            </div>
+            <div class="shop-toolbar" id="categoryFilter">
+                <button class="cat-btn active" data-cat="all">🏷️ 全部</button>
+                <button class="cat-btn" data-cat="时尚奢品">👛 时尚奢品</button>
+                <button class="cat-btn" data-cat="数码科技">📱 数码科技</button>
+                <button class="cat-btn" data-cat="豪华座驾">🏎️ 豪华座驾</button>
+                <button class="cat-btn" data-cat="房产置业">🏙️ 房产置业</button>
+                <button class="cat-btn" data-cat="极致旅行">✈️ 极致旅行</button>
+                <button class="cat-btn" data-cat="美酒佳肴">🍷 美酒佳肴</button>
+            </div>
+            <div class="product-grid" id="productGrid"></div>
+            <div class="invest-section">
+                <div>
+                    <span class="inv-title">📈 理财投资</span>
+                    <span class="inv-desc">投入资金，每日获得 1%~3% 收益（资金锁定）</span>
+                    <span class="inv-status" id="investStatus">未投资</span>
+                </div>
+                <div>
+                    <button class="inv-btn" id="investBtn">💰 投入</button>
+                    <button class="inv-btn" id="withdrawInvestBtn" style="border-color:#ff6b6b;color:#ff6b6b;margin-left:8px;">💸 赎回</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 藏品 Tab ===== -->
+        <div class="tab-content" id="tab-collection">
+            <div class="collection-stats">
+                <div class="stat-item">📦 总件数 <span class="num" id="collTotalItems">0</span></div>
+                <div class="stat-item">💰 总价值 <span class="num gold" id="collTotalValue">0</span></div>
+                <div class="stat-item">🏷️ 种类 <span class="num" id="collTypes">0</span></div>
+            </div>
+            <div class="collection-grid" id="collectionGrid">
+                <div class="collection-empty">还没有藏品，去商店挥霍吧！</div>
+            </div>
+        </div>
+
+        <!-- ===== 社交 Tab ===== -->
+        <div class="tab-content" id="tab-social">
+            <div class="feed-list" id="feedList">
+                <div class="feed-empty">还没有社交动态，购买商品后会显示朋友的互动！</div>
+            </div>
+        </div>
+
+        <!-- ===== 二手市场 Tab ===== -->
+        <div class="tab-content" id="tab-market">
+            <div class="market-grid" id="marketGrid">
+                <div class="market-empty">二手市场暂时没有商品，去挂售一些吧！</div>
+            </div>
+            <div class="my-listings" id="myListings">
+                <h4>📌 我的挂售</h4>
+                <div id="myListingsContainer">
+                    <div style="color:var(--text-secondary);font-size:0.85rem;padding:8px 0;">暂无挂售商品</div>
+                </div>
+            </div>
+            <div class="recent-sales" id="recentSales">
+                <h4>📈 最近成交</h4>
+                <div id="recentSalesContainer">
+                    <div style="color:var(--text-secondary);font-size:0.85rem;padding:8px 0;">暂无成交记录</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 垄断 Tab ===== -->
+        <div class="tab-content" id="tab-monopoly">
+            <div style="margin-bottom:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:0.9rem;color:var(--text-secondary);">操控行业，掌控经济命脉！</span>
+                <button class="special-btn" id="resetMonopolyBtn" style="margin-left:0;">🔄 重置行业</button>
+            </div>
+            <div class="monopoly-grid" id="monopolyGrid"></div>
+        </div>
+
+        <!-- ===== 红灯区 Tab ===== -->
+        <div class="tab-content" id="tab-redlight">
+            <div style="margin-bottom:12px;font-size:0.9rem;color:var(--text-secondary);">🌙 纸醉金迷，体验别样剧情</div>
+            <div class="redlight-grid" id="redlightGrid"></div>
+            <div class="redlight-story" id="redlightStory">点击上面的项目，展开一段故事...</div>
+        </div>
+
+    </div>
+
+    <!-- ===== 弹窗 ===== -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-box">
+            <div class="modal-emoji" id="modalEmoji">🛍️</div>
+            <div class="modal-name" id="modalName">商品名称</div>
+            <div class="modal-rarity" id="modalRarity">⭐ 稀有</div>
+            <div class="modal-price" id="modalPrice">¥0</div>
+            <div class="modal-desc" id="modalDesc">商品描述</div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="modalCancel">取消</button>
+                <button class="btn-confirm" id="modalConfirm">💳 确认购买</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Toast ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ===== 特效容器 ===== -->
+    <div class="flash-overlay" id="flashOverlay"></div>
+    <div class="particle-container" id="particleContainer"></div>
+
+    <script>
+        // ================================================================
+        //  数据
+        // ================================================================
+        const RARITY_MAP = {
+            'common': { label: '普通', color: '#8a8a8a', emoji: '⬜' },
+            'uncommon': { label: '稀有', color: '#4fc3f7', emoji: '🟦' },
+            'rare': { label: '精良', color: '#ab47bc', emoji: '🟪' },
+            'epic': { label: '史诗', color: '#ff6f00', emoji: '🟧' },
+            'legendary': { label: '传说', color: '#ff1744', emoji: '🔥' },
+        };
+
+        const PRODUCTS = [
+            { id: 1, name: '香奈儿经典包', price: 80000, category: '时尚奢品', emoji: '👛', rarity: 'uncommon',
+            desc: '永恒的优雅，社交名媛必备单品。' },
+            { id: 2, name: '卡地亚手镯', price: 180000, category: '时尚奢品', emoji: '💎', rarity: 'rare',
+            desc: '闪耀的钻石，彰显不凡品味。' },
+            { id: 3, name: '劳力士迪通拿', price: 250000, category: '时尚奢品', emoji: '⌚', rarity: 'epic',
+            desc: '传奇腕表，成功人士的象征。' },
+            { id: 4, name: '爱马仕铂金包', price: 300000, category: '时尚奢品', emoji: '👜', rarity: 'legendary',
+                desc: '顶级奢侈品，身份与地位的终极体现。' },
+            { id: 5, name: '定制版 iPhone', price: 50000, category: '数码科技', emoji: '📱', rarity: 'uncommon',
+                desc: '24K金定制，科技与奢华结合。' },
+            { id: 6, name: '森海塞尔耳机', price: 60000, category: '数码科技', emoji: '🎧', rarity: 'common',
+                desc: '顶级音频体验，音乐发烧友的挚爱。' },
+            { id: 7, name: '外星人电脑', price: 80000, category: '数码科技', emoji: '💻', rarity: 'rare',
+            desc: '性能怪兽，游戏玩家的终极装备。' },
+            { id: 8, name: '哈苏相机', price: 150000, category: '数码科技', emoji: '📷', rarity: 'epic',
+                desc: '摄影大师的终极工具，每一张都是艺术品。' },
+            { id: 9, name: '保时捷 911', price: 1500000, category: '豪华座驾', emoji: '🏎️', rarity: 'rare',
+                desc: '经典跑车，驾驭激情与速度。' },
+            { id: 10, name: '兰博基尼 Urus', price: 3000000, category: '豪华座驾', emoji: '🚗', rarity: 'epic',
+                desc: '超级SUV，狂野与奢华的完美融合。' },
+            { id: 11, name: '法拉利 SF90', price: 5000000, category: '豪华座驾', emoji: '🏁', rarity: 'legendary',
+                desc: '赛道王者，每一滴血液都充满速度。' },
+            { id: 12, name: '劳斯莱斯幻影', price: 8000000, category: '豪华座驾', emoji: '🚘', rarity: 'legendary',
+                desc: '移动的宫殿，极致奢华的巅峰。' },
+            { id: 13, name: '城市江景豪宅', price: 15000000, category: '房产置业', emoji: '🏙️', rarity: 'epic',
+                desc: '俯瞰城市天际线，尊享都市繁华。' },
+            { id: 14, name: '海边度假别墅', price: 30000000, category: '房产置业', emoji: '🌴', rarity: 'legendary',
+                desc: '面朝大海，春暖花开，私人度假天堂。' },
+            { id: 15, name: '顶层公寓', price: 50000000, category: '房产置业', emoji: '🌆', rarity: 'legendary',
+                desc: '城市之巅，尽览无限风光。' },
+            { id: 16, name: '私人海岛', price: 100000000, category: '房产置业', emoji: '🏝️', rarity: 'legendary',
+                desc: '拥有自己的岛屿，成为真正的岛主。' },
+            { id: 17, name: '帆船酒店套房', price: 500000, category: '极致旅行', emoji: '🏨', rarity: 'rare',
+                desc: '七星级奢华体验，一生一次的梦幻之旅。' },
+            { id: 18, name: '马尔代夫私人岛', price: 800000, category: '极致旅行', emoji: '🌊', rarity: 'epic',
+                desc: '印度洋上的明珠，极致浪漫与私密。' },
+            { id: 19, name: '南极探险之旅', price: 1500000, category: '极致旅行', emoji: '❄️', rarity: 'epic',
+                desc: '地球最后的净土，勇敢者的终极冒险。' },
+            { id: 20, name: '太空旅行体验', price: 20000000, category: '极致旅行', emoji: '🚀', rarity: 'legendary',
+                desc: '触摸星辰，人类探索精神的终极体现。' },
+            { id: 21, name: '米其林三星晚宴', price: 30000, category: '美酒佳肴', emoji: '🍽️', rarity: 'common',
+                desc: '顶级厨艺的味蕾盛宴，每一口都是艺术。' },
+            { id: 22, name: '顶级鱼子酱', price: 50000, category: '美酒佳肴', emoji: '🥂', rarity: 'uncommon',
+                desc: '海中黑金，奢华味觉的极致享受。' },
+            { id: 23, name: '私人厨师服务', price: 100000, category: '美酒佳肴', emoji: '👨‍🍳', rarity: 'rare',
+                desc: '米其林星级厨师专属服务，每日私享盛宴。' },
+            { id: 24, name: '罗曼尼康帝红酒', price: 300000, category: '美酒佳肴', emoji: '🍷', rarity: 'legendary',
+                desc: '酒中皇帝，稀世珍品，一瓶难求。' }
+        ];
+
+        const INITIAL_BALANCE = 100000000;
+        const FRIENDS = [
+            { name: '陈总', avatar: '👨‍💼' },
+            { name: '林小姐', avatar: '👩‍💼' },
+            { name: '王董', avatar: '👨‍💻' },
+            { name: '张公子', avatar: '🧑‍🎤' },
+            { name: '李太太', avatar: '👩‍🎤' },
+            { name: '赵老板', avatar: '🧑‍💼' },
+            { name: '刘大少', avatar: '👨‍🎨' },
+            { name: '周名媛', avatar: '👩‍🎨' },
+            { name: '吴总裁', avatar: '👨‍💼' },
+            { name: '郑女士', avatar: '👩‍💼' },
+        ];
+        // NPC 姓名池
+        const NPC_NAMES = [
+            { name: '王老板', avatar: '👨‍💼' },
+            { name: '李总', avatar: '👨‍💼' },
+            { name: '张经理', avatar: '👨‍💻' },
+            { name: '刘女士', avatar: '👩‍💼' },
+            { name: '陈先生', avatar: '🧑‍💼' },
+            { name: '赵董', avatar: '👨‍💼' },
+            { name: '周太太', avatar: '👩‍🎤' },
+            { name: '孙少', avatar: '🧑‍🎤' },
+        ];
+
+        // 行业数据（垄断板块）
+        const INDUSTRIES = [
+            { id: 'tech', name: '科技', icon: '💻', marketCap: 50000000, prosperity: 70 },
+            { id: 'realestate', name: '房地产', icon: '🏠', marketCap: 80000000, prosperity: 60 },
+            { id: 'energy', name: '能源', icon: '⚡', marketCap: 40000000, prosperity: 50 },
+            { id: 'entertainment', name: '娱乐', icon: '🎬', marketCap: 30000000, prosperity: 80 },
+            { id: 'finance', name: '金融', icon: '💰', marketCap: 60000000, prosperity: 65 },
+        ];
+
+        // 红灯区项目
+        const REDLIGHT_ITEMS = [
+            { id: 'rl1', name: '顶级夜总会', emoji: '🌃', price: 200000, storys: [
+                    '你走进顶级夜总会，灯光迷离，音乐震耳。VIP包厢里，名流云集，你开了一瓶罗曼尼康帝，全场轰动。一位神秘女子向你走来...',
+                    '夜总会后台，你偶然撞见一位巨星在发脾气。你随手甩出一叠钞票，她立刻对你展露笑颜，邀请你共进宵夜。',
+                    '在夜总会顶层，你包下整个露台，俯瞰城市夜景。服务生端来一杯价值十万的鸡尾酒，你一口饮尽，感觉世界都是你的。'
+                ] },
+            { id: 'rl2', name: '高级会所', emoji: '🍸', price: 150000, storys: [
+                    '高级会所内，你享受着私人按摩师的顶级服务。旁边的雪茄吧里，几位商业巨头正在谈论一笔大生意，你随手插话，竟然促成了一项并购。',
+                    '会所的私人影院，你包场观看一部未上映的大片。散场后，导演亲自来感谢你，并邀请你投资他的下一部作品。',
+                    '在会所的棋牌室，你与几位富商打了一局牌。你运气爆棚，赢了他们每人一辆豪车。'
+                ] },
+            { id: 'rl3', name: '私人派对', emoji: '🎉', price: 300000, storys: [
+                    '你举办了一场私人派对，邀请了全城名媛。泳池边，香槟塔闪耀，你宣布为每位来宾赠送一枚钻石胸针，瞬间成为全场焦点。',
+                    '派对进行到高潮，一位知名DJ突然现身，为你打碟。你站在人群中，享受着欢呼和崇拜。',
+                    '派对的尾声，你与一位神秘嘉宾进行了深入交流，她透露了一个即将暴涨的股票内幕。'
+                ] },
+            { id: 'rl4', name: '赌场贵宾厅', emoji: '🎰', price: 500000, storys: [
+                    '贵宾厅里，你坐在赌桌前，一把梭哈。开牌瞬间，你赢了千万筹码，全场惊呼。你随手给荷官一枚百万筹码作为小费。',
+                    '你在赌场遇到了一位来自澳门的赌王，他向你挑战。你凭借直觉和运气，连续赢了他三局，他心悦诚服地认输。',
+                    '赌场经理亲自为你送来一杯顶级红酒，并邀请你参加今晚的神秘豪赌局，奖品是一座私人海岛。'
+                ] },
+            { id: 'rl5', name: '私人游艇', emoji: '🛥️', price: 800000, storys: [
+                    '你登上自己的私人游艇，驶向公海。甲板上，你与一群朋友享用海鲜大餐，突然发现了一群海豚在船头领航。',
+                    '游艇停靠在一座私人小岛，你下船探索，竟然发现了一个藏宝箱，里面装满了古代金币。',
+                    '在游艇的酒吧里，你与一位知名作家畅谈，他决定以你为原型写一本小说。'
+                ] },
+        ];
+
+        // ================================================================
+        //  状态
+        // ================================================================
+        let state = {
+            balance: INITIAL_BALANCE,
+            totalSpent: 0,
+            purchaseCount: 0,
+            collections: [], // {id, productId, name, price, emoji, category, rarity, purchaseTime, status, quantity}
+            listings: [], // {id, collectionId, productId, name, price, emoji, rarity, seller, listingPrice, listedTime}
+            feed: [],
+            recentSales: [],
+            nextId: 1,
+            nextFeedId: 1,
+            nextListingId: 1,
+            investAmount: 0,
+            investTime: null,
+            investEarnings: 0,
+            lastInvestUpdate: null,
+            // 垄断
+            industries: [], // {id, name, icon, marketCap, prosperity, sharesHeld, price}
+            // 红灯区剧情
+            redlightStory: '',
+        };
+
+        let currentCategory = 'all';
+        let pendingProductId = null;
+        let marketTimer = null;
+        let investTimer = null;
+        let npcListingTimer = null;
+
+        // ================================================================
+        //  DOM 引用
+        // ================================================================
+        const $ = (s) => document.querySelector(s);
+        const $$ = (s) => document.querySelectorAll(s);
+
+        const balanceDisplay = $('#balanceDisplay');
+        const totalSpentDisplay = $('#totalSpent');
+        const collectionCountDisplay = $('#collectionCount');
+        const collectionBadge = $('#collectionBadge');
+        const socialBadge = $('#socialBadge');
+        const marketBadge = $('#marketBadge');
+        const investAmountDisplay = $('#investAmount');
+
+        const productGrid = $('#productGrid');
+        const collectionGrid = $('#collectionGrid');
+        const feedList = $('#feedList');
+        const marketGrid = $('#marketGrid');
+        const myListingsContainer = $('#myListingsContainer');
+        const recentSalesContainer = $('#recentSalesContainer');
+        const monopolyGrid = $('#monopolyGrid');
+        const redlightGrid = $('#redlightGrid');
+        const redlightStory = $('#redlightStory');
+
+        const collTotalItems = $('#collTotalItems');
+        const collTotalValue = $('#collTotalValue');
+        const collTypes = $('#collTypes');
+
+        const modalOverlay = $('#confirmModal');
+        const modalEmoji = $('#modalEmoji');
+        const modalName = $('#modalName');
+        const modalRarity = $('#modalRarity');
+        const modalPrice = $('#modalPrice');
+        const modalDesc = $('#modalDesc');
+        const modalConfirm = $('#modalConfirm');
+        const modalCancel = $('#modalCancel');
+
+        const flashOverlay = $('#flashOverlay');
+        const particleContainer = $('#particleContainer');
+        const toastContainer = $('#toastContainer');
+
+        const tabNav = $('#tabNav');
+        const tabContents = {
+            shop: $('#tab-shop'),
+            collection: $('#tab-collection'),
+            social: $('#tab-social'),
+            market: $('#tab-market'),
+            monopoly: $('#tab-monopoly'),
+            redlight: $('#tab-redlight'),
+        };
+
+        const blindboxBtn = $('#blindboxBtn');
+        const investBtn = $('#investBtn');
+        const withdrawInvestBtn = $('#withdrawInvestBtn');
+        const investStatus = $('#investStatus');
+
+        // ================================================================
+        //  工具
+        // ================================================================
+        function fmt(n) { return n.toLocaleString('zh-CN'); }
+
+        function getTime() {
+            const d = new Date();
+            return d.toLocaleString('zh-CN', { hour12: false });
+        }
+
+        function randomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        function randomRange(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function generateId() { return state.nextId++; }
+
+        function generateFeedId() { return state.nextFeedId++; }
+
+        function generateListingId() { return state.nextListingId++; }
+
+        function getRarityInfo(rarity) { return RARITY_MAP[rarity] || RARITY_MAP['common']; }
+
+        // ================================================================
+        //  音效
+        // ================================================================
+        let audioCtx = null;
+
+        function playSound(type) {
+            try {
+                if (!audioCtx) audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                if (type === 'purchase') {
+                    osc.frequency.value = 880;
+                    osc.type = 'sine';
+                    gain.gain.value = 0.12;
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.25);
+                    setTimeout(() => {
+                        const osc2 = audioCtx.createOscillator();
+                        const gain2 = audioCtx.createGain();
+                        osc2.connect(gain2);
+                        gain2.connect(audioCtx.destination);
+                        osc2.frequency.value = 1200;
+                        osc2.type = 'sine';
+                        gain2.gain.value = 0.08;
+                        gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                        osc2.start();
+                        osc2.stop(audioCtx.currentTime + 0.3);
+                    }, 80);
+                } else if (type === 'click') {
+                    osc.frequency.value = 600;
+                    osc.type = 'sine';
+                    gain.gain.value = 0.06;
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.08);
+                } else if (type === 'sell') {
+                    osc.frequency.value = 440;
+                    osc.type = 'triangle';
+                    gain.gain.value = 0.08;
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'jackpot') {
+                    osc.frequency.value = 1500;
+                    osc.type = 'square';
+                    gain.gain.value = 0.1;
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                    setTimeout(() => {
+                        const osc3 = audioCtx.createOscillator();
+                        const gain3 = audioCtx.createGain();
+                        osc3.connect(gain3);
+                        gain3.connect(audioCtx.destination);
+                        osc3.frequency.value = 2000;
+                        osc3.type = 'sine';
+                        gain3.gain.value = 0.08;
+                        gain3.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                        osc3.start();
+                        osc3.stop(audioCtx.currentTime + 0.3);
+                    }, 150);
+                }
+            } catch (_) {}
+        }
+
+        // ================================================================
+        //  特效
+        // ================================================================
+        function triggerCelebration(x, y, intense = false) {
+            flashOverlay.classList.add('active');
+            setTimeout(() => flashOverlay.classList.remove('active'), 300);
+            const colors = ['#d4a74a', '#f0d080', '#ff6b6b', '#4fc3f7', '#ab47bc', '#ff6f00', '#ff1744', '#fff'];
+            const count = intense ? 100 : 50;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = randomRange(6, 16);
+                const angle = Math.random() * 2 * Math.PI;
+                const dist = randomRange(80, intense ? 400 : 280);
+                const tx = Math.cos(angle) * dist;
+                const ty = Math.sin(angle) * dist - 60;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.background = randomItem(colors);
+                p.style.left = (x || window.innerWidth / 2) + 'px';
+                p.style.top = (y || window.innerHeight / 2) + 'px';
+                p.style.setProperty('--tx', tx + 'px');
+                p.style.setProperty('--ty', ty + 'px');
+                p.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
+                particleContainer.appendChild(p);
+                setTimeout(() => p.remove(), 1600);
+            }
+            const starCount = intense ? 40 : 20;
+            for (let i = 0; i < starCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = randomRange(10, 24);
+                const angle = Math.random() * 2 * Math.PI;
+                const dist = randomRange(60, intense ? 300 : 200);
+                const tx = Math.cos(angle) * dist;
+                const ty = Math.sin(angle) * dist - 80;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.background = 'transparent';
+                p.style.fontSize = size + 'px';
+                p.style.display = 'flex';
+                p.style.alignItems = 'center';
+                p.style.justifyContent = 'center';
+                p.textContent = randomItem(['✨', '⭐', '🌟', '💫', '🎉', '🎊', '🌈']);
+                p.style.left = (x || window.innerWidth / 2) + 'px';
+                p.style.top = (y || window.innerHeight / 2) + 'px';
+                p.style.setProperty('--tx', tx + 'px');
+                p.style.setProperty('--ty', ty + 'px');
+                p.style.animationDuration = (0.9 + Math.random() * 0.8) + 's';
+                particleContainer.appendChild(p);
+                setTimeout(() => p.remove(), 1800);
+            }
+        }
+
+        // ================================================================
+        //  Toast
+        // ================================================================
+        function showToast(icon, title, sub, duration = 3200) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <span class="toast-icon">${icon}</span>
+                <div>
+                    <div class="toast-text">${title}</div>
+                    ${sub ? `<div class="toast-sub">${sub}</div>` : ''}
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 500);
+            }, duration);
+            return toast;
+        }
+
+        // ================================================================
+        //  社交动态 - 修正人物对应
+        // ================================================================
+        function addFeed(product, type = 'purchase', extra = {}) {
+            let content = '';
+            let feedUser = null;
+            let feedType = type;
+
+            if (type === 'purchase') {
+                // 玩家购买
+                feedUser = { name: '我', avatar: '👤' };
+                const templates = [
+                    `花了 <strong>¥${fmt(product.price)}</strong> 买了 <strong>${product.emoji} ${product.name}</strong>！太壕了！`,
+                    `刚刚入手了 <strong>${product.emoji} ${product.name}</strong>，价值 <strong>¥${fmt(product.price)}</strong>，人生圆满了！`,
+                    `挥霍时刻！<strong>${product.emoji} ${product.name}</strong> 拿下！💰¥${fmt(product.price)}`,
+                    `太喜欢了！<strong>${product.emoji} ${product.name}</strong> 到手，价格 <strong>¥${fmt(product.price)}</strong> 值了！`,
+                ];
+                content = randomItem(templates);
+            } else if (type === 'sell') {
+                // 玩家卖出（自动成交，买家是NPC）
+                const buyer = extra.buyer || randomItem(FRIENDS);
+                feedUser = { name: '我', avatar: '👤' };
+                content =
+                `🎉 我的 <strong>${product.emoji} ${product.name}</strong> 被 ${buyer.avatar} ${buyer.name} 以 <strong>¥${fmt(product.price)}</strong> 买走了！`;
+                feedType = 'sell';
+            } else if (type === 'market_buy') {
+                // 玩家从市场买入（卖家可能是NPC）
+                const seller = extra.seller || randomItem(FRIENDS);
+                feedUser = { name: '我', avatar: '👤' };
+                content =
+                `🛒 从 ${seller.avatar} ${seller.name} 手里买到了 <strong>${product.emoji} ${product.name}</strong>，花费 ¥${fmt(product.price)}，捡漏了！`;
+                feedType = 'market_buy';
+            } else if (type === 'blindbox') {
+                feedUser = { name: '我', avatar: '👤' };
+                const templates = [
+                    `🎁 抽盲盒抽到了 <strong>${product.emoji} ${product.name}</strong>！太刺激了！`,
+                    `🔥 盲盒一发入魂！<strong>${product.emoji} ${product.name}</strong> 到手！`,
+                    `🎲 手气爆棚！抽到了 <strong>${product.emoji} ${product.name}</strong>，价值 ¥${fmt(product.price)}！`,
+                ];
+                content = randomItem(templates);
+                feedType = 'blindbox';
+            } else if (type === 'npc_listing') {
+                // NPC挂售动态（系统生成）
+                const npc = extra.npc || randomItem(NPC_NAMES);
+                feedUser = { name: npc.name, avatar: npc.avatar };
+                content =
+                `📦 ${npc.avatar} ${npc.name} 在二手市场挂售了 <strong>${product.emoji} ${product.name}</strong>，标价 ¥${fmt(product.price)}`;
+                feedType = 'npc_listing';
+            } else if (type === 'npc_sale') {
+                // NPC之间成交
+                const buyer = extra.buyer || randomItem(FRIENDS);
+                const seller = extra.seller || randomItem(NPC_NAMES);
+                feedUser = { name: seller.name, avatar: seller.avatar };
+                content =
+                `🤝 ${seller.avatar} ${seller.name} 的 <strong>${product.emoji} ${product.name}</strong> 被 ${buyer.avatar} ${buyer.name} 以 ¥${fmt(product.price)} 买走`;
+                feedType = 'npc_sale';
+            }
+
+            if (!feedUser) feedUser = { name: '系统', avatar: '🤖' };
+
+            const feedItem = {
+                id: generateFeedId(),
+                type: feedType,
+                user: feedUser,
+                content: content,
+                time: getTime(),
+                likes: randomRange(0, 8),
+                comments: randomRange(0, 4),
+                liked: false,
+            };
+            state.feed.unshift(feedItem);
+            if (state.feed.length > 150) state.feed.pop();
+            updateUI();
+            return feedItem;
+        }
+
+        // ================================================================
+        //  核心购买
+        // ================================================================
+        function executePurchase(productId) {
+            const product = PRODUCTS.find(p => p.id === productId);
+            if (!product) return false;
+            if (state.balance < product.price) {
+                showToast('😅', '余额不足！', '再去赚点钱吧～');
+                return false;
+            }
+            state.balance -= product.price;
+            state.totalSpent += product.price;
+            state.purchaseCount += 1;
+
+            const existing = state.collections.find(c => c.productId === product.id && c.status === 'owned');
+            if (existing) {
+                existing.quantity = (existing.quantity || 1) + 1;
+            } else {
+                state.collections.push({
+                    id: generateId(),
+                    productId: product.id,
+                    name: product.name,
+                    price: product.price,
+                    emoji: product.emoji,
+                    category: product.category,
+                    rarity: product.rarity,
+                    purchaseTime: getTime(),
+                    status: 'owned',
+                    quantity: 1,
+                });
+            }
+
+            addFeed(product, 'purchase');
+
+            const rect = modalConfirm.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top - 20;
+            triggerCelebration(cx, cy);
+            playSound('purchase');
+
+            const rarityInfo = getRarityInfo(product.rarity);
+            showToast(product.emoji, `🎉 购入 <strong>${product.name}</strong>！`,
+                `花费 ¥${fmt(product.price)} · ${rarityInfo.emoji} ${rarityInfo.label}`);
+
+            checkAchievements();
+            updateUI();
+            closeModal();
+
+            if (state.balance === 0) {
+                setTimeout(() => {
+                    showToast('💸', '🎊 恭喜！你花光了所有钱！', '体验了一把真正的挥霍人生！');
+                }, 800);
+            }
+
+            setTimeout(() => {
+                switchTab('collection');
+            }, 600);
+            return true;
+        }
+
+        // ================================================================
+        //  盲盒
+        // ================================================================
+        function drawBlindbox() {
+            const cost = 100000;
+            if (state.balance < cost) {
+                showToast('😅', '余额不足！', '抽盲盒需要 ¥100,000');
+                return;
+            }
+            const pool = [];
+            for (const p of PRODUCTS) {
+                let weight = 0;
+                if (p.rarity === 'common') weight = 48;
+                else if (p.rarity === 'uncommon') weight = 30;
+                else if (p.rarity === 'rare') weight = 15;
+                else if (p.rarity === 'epic') weight = 5;
+                else if (p.rarity === 'legendary') weight = 2;
+                for (let i = 0; i < weight; i++) pool.push(p);
+            }
+            const selected = randomItem(pool);
+            state.balance -= cost;
+            state.totalSpent += cost;
+            state.purchaseCount += 1;
+
+            const existing = state.collections.find(c => c.productId === selected.id && c.status === 'owned');
+            if (existing) {
+                existing.quantity = (existing.quantity || 1) + 1;
+            } else {
+                state.collections.push({
+                    id: generateId(),
+                    productId: selected.id,
+                    name: selected.name,
+                    price: selected.price,
+                    emoji: selected.emoji,
+                    category: selected.category,
+                    rarity: selected.rarity,
+                    purchaseTime: getTime(),
+                    status: 'owned',
+                    quantity: 1,
+                });
+            }
+
+            addFeed(selected, 'blindbox');
+
+            const isRare = selected.rarity === 'epic' || selected.rarity === 'legendary';
+            triggerCelebration(window.innerWidth / 2, window.innerHeight / 2 - 60, isRare);
+            playSound(isRare ? 'jackpot' : 'purchase');
+
+            const rarityInfo = getRarityInfo(selected.rarity);
+            showToast('🎁', `🎲 抽到 <strong>${selected.emoji} ${selected.name}</strong>！`,
+                `${rarityInfo.emoji} ${rarityInfo.label} · 价值 ¥${fmt(selected.price)}`);
+
+            if (selected.rarity === 'legendary') {
+                setTimeout(() => {
+                    triggerCelebration(window.innerWidth / 2, window.innerHeight / 2 - 100, true);
+                    showToast('🏆', '🔥 传说级！欧皇附体！', '稀有度 MAX！');
+                }, 500);
+            }
+
+            checkAchievements();
+            updateUI();
+            setTimeout(() => switchTab('collection'), 800);
+        }
+
+        // ================================================================
+        //  投资理财
+        // ================================================================
+        function investMoney() {
+            if (state.investAmount > 0) {
+                showToast('⚠️', '已有投资进行中', '请先赎回');
+                return;
+            }
+            const amount = prompt('请输入要投资的金额（至少 1,000,000）：', '1000000');
+            if (amount === null) return;
+            const val = parseInt(amount.replace(/,/g, ''));
+            if (isNaN(val) || val < 1000000) {
+                showToast('⚠️', '投资金额至少 1,000,000', '');
+                return;
+            }
+            if (state.balance < val) {
+                showToast('😅', '余额不足！', '');
+                return;
+            }
+            state.balance -= val;
+            state.investAmount = val;
+            state.investTime = Date.now();
+            state.investEarnings = 0;
+            state.lastInvestUpdate = Date.now();
+            investStatus.textContent = `已投资 ¥${fmt(val)}，收益中...`;
+            showToast('📈', `投资 ¥${fmt(val)} 成功`, '资金已锁定，每日产生收益');
+            updateUI();
+            saveState();
+        }
+
+        function withdrawInvest() {
+            if (state.investAmount === 0) {
+                showToast('⚠️', '没有投资', '');
+                return;
+            }
+            const now = Date.now();
+            const elapsed = (now - state.investTime) / (1000 * 60 * 60 * 24);
+            const dailyRate = randomRange(1, 3) / 100;
+            const earnings = Math.floor(state.investAmount * dailyRate * elapsed);
+            const total = state.investAmount + earnings;
+            state.balance += total;
+            state.investAmount = 0;
+            state.investTime = null;
+            state.investEarnings = 0;
+            state.lastInvestUpdate = null;
+            investStatus.textContent = '未投资';
+            showToast('💰', `赎回成功！`, `本金 ¥${fmt(state.investAmount)} + 收益 ¥${fmt(earnings)} = ¥${fmt(total)}`);
+            const feedItem = {
+                id: generateFeedId(),
+                type: 'invest',
+                user: { name: '系统', avatar: '🤖' },
+                content: `📈 理财到期，获得收益 <strong>¥${fmt(earnings)}</strong>！`,
+                time: getTime(),
+                likes: randomRange(0, 5),
+                comments: randomRange(0, 2),
+                liked: false,
+            };
+            state.feed.unshift(feedItem);
+            updateUI();
+            saveState();
+        }
+
+        function updateInvestEarnings() {
+            if (state.investAmount === 0 || !state.investTime) return;
+            const now = Date.now();
+            const elapsed = (now - state.investTime) / (1000 * 60 * 60 * 24);
+            if (elapsed >= 1) {
+                const dailyRate = randomRange(1, 3) / 100;
+                const gain = Math.floor(state.investAmount * dailyRate);
+                state.investEarnings += gain;
+                state.investTime = now;
+                showToast('📈', `今日理财收益 +¥${fmt(gain)}`, `累计收益 ¥${fmt(state.investEarnings)}`);
+                investStatus.textContent =
+                    `已投资 ¥${fmt(state.investAmount)}，累计收益 ¥${fmt(state.investEarnings)}`;
+                saveState();
+            }
+        }
+
+        // ================================================================
+        //  二手市场 - 挂售（玩家）
+        // ================================================================
+        function listItem(collectionId, listingPrice) {
+            const coll = state.collections.find(c => c.id === collectionId);
+            if (!coll) return false;
+            if (coll.status === 'listing') {
+                showToast('⚠️', '这件商品已在挂售中', '');
+                return false;
+            }
+            if (coll.quantity && coll.quantity > 1) {
+                if (!confirm(`你有 ${coll.quantity} 件 ${coll.emoji} ${coll.name}，确定挂售一件吗？`)) return false;
+                coll.quantity -= 1;
+                if (coll.quantity === 0) {
+                    const idx = state.collections.indexOf(coll);
+                    if (idx > -1) state.collections.splice(idx, 1);
+                }
+                const newColl = {
+                    id: generateId(),
+                    productId: coll.productId,
+                    name: coll.name,
+                    price: coll.price,
+                    emoji: coll.emoji,
+                    category: coll.category,
+                    rarity: coll.rarity,
+                    purchaseTime: getTime(),
+                    status: 'listing',
+                    quantity: 1,
+                };
+                state.collections.push(newColl);
+                return listItem(newColl.id, listingPrice);
+            } else {
+                coll.status = 'listing';
+                const listing = {
+                    id: generateListingId(),
+                    collectionId: coll.id,
+                    productId: coll.productId,
+                    name: coll.name,
+                    price: coll.price,
+                    emoji: coll.emoji,
+                    rarity: coll.rarity,
+                    seller: '我',
+                    listingPrice: listingPrice || Math.round(coll.price * (0.7 + Math.random() * 0.6)),
+                    listedTime: getTime(),
+                };
+                state.listings.push(listing);
+                playSound('sell');
+                showToast('📌', `已挂售 <strong>${coll.emoji} ${coll.name}</strong>`, `标价 ¥${fmt(listing.listingPrice)}`);
+                updateUI();
+                return true;
+            }
+        }
+
+        function delistItem(listingId) {
+            const idx = state.listings.findIndex(l => l.id === listingId);
+            if (idx === -1) return false;
+            const listing = state.listings[idx];
+            const coll = state.collections.find(c => c.id === listing.collectionId);
+            if (coll) coll.status = 'owned';
+            state.listings.splice(idx, 1);
+            showToast('🔄', '已下架商品', '');
+            updateUI();
+            return true;
+        }
+
+        // ================================================================
+        //  二手市场 - 购买（玩家从市场）
+        // ================================================================
+        function buyUsed(listingId) {
+            const listing = state.listings.find(l => l.id === listingId);
+            if (!listing) return false;
+            if (state.balance < listing.listingPrice) {
+                showToast('😅', '余额不足！', '买不起二手～');
+                return false;
+            }
+
+            const coll = state.collections.find(c => c.id === listing.collectionId);
+            if (coll) {
+                const idx = state.collections.indexOf(coll);
+                if (idx > -1) state.collections.splice(idx, 1);
+            }
+            const lIdx = state.listings.indexOf(listing);
+            if (lIdx > -1) state.listings.splice(lIdx, 1);
+
+            state.balance -= listing.listingPrice;
+            state.totalSpent += listing.listingPrice;
+            state.purchaseCount += 1;
+
+            const newColl = {
+                id: generateId(),
+                productId: listing.productId,
+                name: listing.name,
+                price: listing.listingPrice,
+                emoji: listing.emoji,
+                category: '二手购入',
+                rarity: listing.rarity,
+                purchaseTime: getTime(),
+                status: 'owned',
+                quantity: 1,
+            };
+            state.collections.push(newColl);
+
+            // 卖家信息
+            const sellerName = listing.seller === '我' ? '我' : listing.seller;
+            const sellerObj = listing.seller === '我' ? { name: '我', avatar: '👤' } : { name: listing.seller, avatar: '🧑' };
+
+            addFeed({ emoji: listing.emoji, name: listing.name, price: listing.listingPrice }, 'market_buy', { seller: sellerObj });
+
+            state.recentSales.unshift({
+                emoji: listing.emoji,
+                name: listing.name,
+                price: listing.listingPrice,
+                buyer: '我',
+                seller: listing.seller,
+                time: getTime(),
+                premium: false,
+            });
+            if (state.recentSales.length > 20) state.recentSales.pop();
+
+            playSound('purchase');
+            triggerCelebration(window.innerWidth / 2, window.innerHeight / 2);
+            showToast('🛒', `二手购入 <strong>${listing.emoji} ${listing.name}</strong>`, `花费 ¥${fmt(listing.listingPrice)}`);
+
+            updateUI();
+            switchTab('collection');
+            return true;
+        }
+
+        // ================================================================
+        //  NPC 挂售系统
+        // ================================================================
+        function createNpcListing() {
+            // 随机选择一个商品
+            const product = randomItem(PRODUCTS);
+            const npc = randomItem(NPC_NAMES);
+            // 价格浮动 0.6~1.5 倍
+            const priceMultiplier = 0.6 + Math.random() * 0.9;
+            const listingPrice = Math.round(product.price * priceMultiplier);
+
+            // 创建NPC挂售（不关联收藏，直接放到listings中，seller为NPC名称）
+            const listing = {
+                id: generateListingId(),
+                collectionId: null, // NPC挂售没有关联收藏
+                productId: product.id,
+                name: product.name,
+                price: product.price,
+                emoji: product.emoji,
+                rarity: product.rarity,
+                seller: npc.name,
+                listingPrice: listingPrice,
+                listedTime: getTime(),
+                isNpc: true,
+                npcAvatar: npc.avatar,
+            };
+            state.listings.push(listing);
+            // 生成社交动态
+            addFeed({ emoji: product.emoji, name: product.name, price: listingPrice }, 'npc_listing', { npc: npc });
+            // 限制NPC挂售数量，避免过多
+            const npcListings = state.listings.filter(l => l.isNpc);
+            if (npcListings.length > 15) {
+                // 移除最老的NPC挂售
+                const oldest = npcListings.sort((a, b) => a.id - b.id)[0];
+                const idx = state.listings.indexOf(oldest);
+                if (idx > -1) state.listings.splice(idx, 1);
+            }
+            updateUI();
+        }
+
+        // ================================================================
+        //  自动市场模拟器（包含NPC成交）
+        // ================================================================
+        function simulateMarket() {
+            const validListings = state.listings.filter(l => {
+                if (l.isNpc) return true;
+                const coll = state.collections.find(c => c.id === l.collectionId);
+                return coll && coll.status === 'listing';
+            });
+
+            if (validListings.length === 0) return;
+
+            // 随机选择一件
+            const listing = randomItem(validListings);
+            let chance = 0.55;
+            const priceFactor = Math.max(0.3, 1 - (listing.listingPrice / (listing.price * 1.5)));
+            chance = Math.min(0.8, 0.55 + priceFactor * 0.3);
+
+            // 溢价概率
+            const isPremium = Math.random() < 0.15;
+            let salePrice = listing.listingPrice;
+            if (isPremium) {
+                salePrice = Math.round(listing.listingPrice * (1.2 + Math.random() * 0.8));
+                chance = 0.9;
+            }
+
+            if (Math.random() > chance) return;
+
+            // 确定买家（如果是NPC挂售，买家可以是另一个NPC或玩家？为了让市场活跃，我们模拟NPC买家）
+            let buyer = null;
+            let seller = listing.seller;
+
+            // 如果是NPC挂售，买家可能是其他NPC（我们随机选一个NPC）
+            if (listing.isNpc) {
+                buyer = randomItem(NPC_NAMES);
+                // 确保买家不是卖家
+                while (buyer.name === seller) {
+                    buyer = randomItem(NPC_NAMES);
+                }
+                // NPC成交：移除挂售，生成动态
+                const idx = state.listings.indexOf(listing);
+                if (idx > -1) state.listings.splice(idx, 1);
+                // 记录成交
+                state.recentSales.unshift({
+                    emoji: listing.emoji,
+                    name: listing.name,
+                    price: salePrice,
+                    buyer: buyer.name,
+                    seller: seller,
+                    time: getTime(),
+                    premium: isPremium,
+                });
+                if (state.recentSales.length > 20) state.recentSales.pop();
+                // 社交动态
+                addFeed({ emoji: listing.emoji, name: listing.name, price: salePrice }, 'npc_sale', { buyer: buyer,
+                    seller: { name: seller, avatar: '🧑' } });
+                // 小特效
+                triggerCelebration(window.innerWidth * 0.5, window.innerHeight * 0.3, false);
+                playSound('sell');
+                updateUI();
+                return;
+            }
+
+            // 玩家挂售：买家是NPC
+            if (!listing.isNpc) {
+                buyer = randomItem(NPC_NAMES);
+                // 移除挂售和收藏
+                const coll = state.collections.find(c => c.id === listing.collectionId);
+                if (!coll) return;
+                const collIdx = state.collections.indexOf(coll);
+                if (collIdx > -1) state.collections.splice(collIdx, 1);
+                const lIdx = state.listings.indexOf(listing);
+                if (lIdx > -1) state.listings.splice(lIdx, 1);
+
+                // 玩家获得资金
+                state.balance += salePrice;
+
+                state.recentSales.unshift({
+                    emoji: listing.emoji,
+                    name: listing.name,
+                    price: salePrice,
+                    buyer: buyer.name,
+                    seller: '我',
+                    time: getTime(),
+                    premium: isPremium,
+                });
+                if (state.recentSales.length > 20) state.recentSales.pop();
+
+                // 社交动态
+                addFeed({ emoji: listing.emoji, name: listing.name, price: salePrice }, 'sell', { buyer: buyer });
+
+                triggerCelebration(window.innerWidth * 0.7, window.innerHeight * 0.4, isPremium);
+                playSound('sell');
+
+                const premiumText = isPremium ? ' 🎉 溢价成交！' : '';
+                showToast('💰', `🎉 您的 <strong>${listing.emoji} ${listing.name}</strong> 已售出！${premiumText}`,
+                    `${buyer.avatar} ${buyer.name} 以 ¥${fmt(salePrice)} 买走了`);
+
+                updateUI();
+                if (document.querySelector('#tab-market').classList.contains('active')) {
+                    renderMarket();
+                }
+            }
+        }
+
+        // ================================================================
+        //  垄断板块
+        // ================================================================
+        function initIndustries() {
+            state.industries = INDUSTRIES.map(ind => ({
+                ...ind,
+                sharesHeld: 0,
+                price: Math.round(ind.marketCap / 10000),
+            }));
+        }
+
+        function renderMonopoly() {
+            if (!state.industries || state.industries.length === 0) initIndustries();
+            let html = '';
+            for (const ind of state.industries) {
+                const prosperity = Math.min(100, Math.max(0, ind.prosperity));
+                const price = Math.round(ind.marketCap / 10000 * (0.5 + prosperity / 100));
+                ind.price = price;
+                const canBuy = state.balance >= price;
+                const canSell = ind.sharesHeld > 0;
+                html += `
+                    <div class="monopoly-card">
+                        <div class="m-icon">${ind.icon}</div>
+                        <div class="m-name">${ind.name}</div>
+                        <div class="m-detail">市值 ¥${fmt(ind.marketCap)}</div>
+                        <div class="m-detail">繁荣度 ${Math.round(prosperity)}%</div>
+                        <div class="m-prosperity"><div class="fill" style="width:${prosperity}%;"></div></div>
+                        <div class="m-shares">股价 ¥${fmt(price)} | 持有 ${ind.sharesHeld} 股</div>
+                        <div class="m-actions">
+                            <button class="primary" data-action="buy" data-id="${ind.id}" ${canBuy ? '' : 'disabled'}>买入 1 股</button>
+                            <button data-action="sell" data-id="${ind.id}" ${canSell ? '' : 'disabled'}>卖出 1 股</button>
+                            <button class="danger" data-action="manipulate" data-id="${ind.id}">操控 ±10%</button>
+                            <button data-action="reset" data-id="${ind.id}">重置</button>
+                        </div>
+                    </div>
+                `;
+            }
+            monopolyGrid.innerHTML = html;
+
+            monopolyGrid.querySelectorAll('button[data-action]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const action = btn.dataset.action;
+                    const id = btn.dataset.id;
+                    const ind = state.industries.find(i => i.id === id);
+                    if (!ind) return;
+                    if (action === 'buy') {
+                        const price = ind.price;
+                        if (state.balance < price) {
+                            showToast('😅', '余额不足', '买不起这股');
+                            return;
+                        }
+                        state.balance -= price;
+                        ind.sharesHeld += 1;
+                        // 买入提振繁荣度
+                        ind.prosperity = Math.min(100, ind.prosperity + 2);
+                        showToast('📈', `买入 ${ind.name} 1股`, `花费 ¥${fmt(price)}`);
+                        playSound('click');
+                        updateUI();
+                    } else if (action === 'sell') {
+                        if (ind.sharesHeld <= 0) return;
+                        const price = ind.price;
+                        state.balance += price;
+                        ind.sharesHeld -= 1;
+                        // 卖出略微降低繁荣度
+                        ind.prosperity = Math.max(0, ind.prosperity - 1);
+                        showToast('💰', `卖出 ${ind.name} 1股`, `获得 ¥${fmt(price)}`);
+                        playSound('click');
+                        updateUI();
+                    } else if (action === 'manipulate') {
+                        const change = (Math.random() > 0.5 ? 1 : -1) * randomRange(5, 15);
+                        const newPros = Math.min(100, Math.max(0, ind.prosperity + change));
+                        ind.prosperity = newPros;
+                        // 根据操控方向调整市值
+                        const delta = Math.round(ind.marketCap * (change / 100));
+                        ind.marketCap = Math.max(100000, ind.marketCap + delta);
+                        showToast('🛠️', `操控 ${ind.name}`, `繁荣度 ${change > 0 ? '+' : ''}${change}%，市值 ${delta > 0 ? '+' : ''}${fmt(delta)}`);
+                        // 生成社交动态
+                        const feedItem = {
+                            id: generateFeedId(),
+                            type: 'manipulate',
+                            user: { name: '我', avatar: '👤' },
+                            content: `🏛️ 我操控了 <strong>${ind.name}</strong> 行业，繁荣度 ${change > 0 ? '上涨' : '下跌'} ${Math.abs(change)}%！`,
+                            time: getTime(),
+                            likes: randomRange(0, 5),
+                            comments: randomRange(0, 2),
+                            liked: false,
+                        };
+                        state.feed.unshift(feedItem);
+                        playSound('click');
+                        updateUI();
+                    } else if (action === 'reset') {
+                        const orig = INDUSTRIES.find(i => i.id === id);
+                        if (orig) {
+                            ind.marketCap = orig.marketCap;
+                            ind.prosperity = orig.prosperity;
+                            ind.sharesHeld = 0;
+                            showToast('🔄', `重置 ${ind.name}`, '恢复初始状态');
+                            updateUI();
+                        }
+                    }
+                });
+            });
+        }
+
+        // 重置所有行业
+        function resetIndustries() {
+            initIndustries();
+            showToast('🔄', '行业已重置', '所有行业恢复初始状态');
+            updateUI();
+        }
+
+        // ================================================================
+        //  红灯区
+        // ================================================================
+        function renderRedlight() {
+            let html = '';
+            for (const item of REDLIGHT_ITEMS) {
+                const canAfford = state.balance >= item.price;
+                html += `
+                    <div class="redlight-card" data-id="${item.id}">
+                        <div class="rl-emoji">${item.emoji}</div>
+                        <div class="rl-name">${item.name}</div>
+                        <div class="rl-price">¥${fmt(item.price)}</div>
+                        <button class="rl-btn" data-id="${item.id}" ${canAfford ? '' : 'disabled'}>
+                            ${canAfford ? '💃 体验' : '💰 余额不足'}
+                        </button>
+                    </div>
+                `;
+            }
+            redlightGrid.innerHTML = html;
+
+            redlightGrid.querySelectorAll('.rl-btn:not([disabled])').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    const item = REDLIGHT_ITEMS.find(i => i.id === id);
+                    if (!item) return;
+                    if (state.balance < item.price) {
+                        showToast('😅', '余额不足', '');
+                        return;
+                    }
+                    // 扣款
+                    state.balance -= item.price;
+                    state.totalSpent += item.price;
+                    state.purchaseCount += 1;
+
+                    // 随机选择一个剧情
+                    const story = randomItem(item.storys);
+                    redlightStory.innerHTML = `<span class="story-highlight">${item.emoji} ${item.name}</span>：${story}`;
+
+                    // 添加社交动态
+                    const feedItem = {
+                        id: generateFeedId(),
+                        type: 'redlight',
+                        user: { name: '我', avatar: '👤' },
+                        content: `🌙 在 ${item.emoji} ${item.name} 体验奢华，消费 ¥${fmt(item.price)}，故事：${story.slice(0, 20)}...`,
+                        time: getTime(),
+                        likes: randomRange(0, 5),
+                        comments: randomRange(0, 2),
+                        liked: false,
+                    };
+                    state.feed.unshift(feedItem);
+
+                    // 特效
+                    triggerCelebration(window.innerWidth / 2, window.innerHeight / 2 - 60, true);
+                    playSound('jackpot');
+                    showToast('🌙', `✨ 体验 ${item.name}`, `消费 ¥${fmt(item.price)}，精彩故事！`);
+
+                    updateUI();
+                    // 更新按钮状态
+                    renderRedlight();
+                });
+            });
+        }
+
+        // ================================================================
+        //  成就
+        // ================================================================
+        const ACHIEVEMENTS = [
+            { threshold: 100000, label: '消费满 10 万 · 小试牛刀', icon: '💸' },
+            { threshold: 1000000, label: '消费满 100 万 · 挥霍入门', icon: '🥂' },
+            { threshold: 5000000, label: '消费满 500 万 · 奢侈玩家', icon: '💎' },
+            { threshold: 10000000, label: '消费满 1000 万 · 钻石级消费者', icon: '👑' },
+            { threshold: 50000000, label: '消费满 5000 万 · 财富毁灭者', icon: '🔥' },
+            { threshold: 100000000, label: '消费满 1 亿 · 终极挥霍之王', icon: '🏆' },
+            { threshold: 200000000, label: '消费满 2 亿 · 神话传说', icon: '🌟' },
+            { threshold: 500000000, label: '消费满 5 亿 · 宇宙大亨', icon: '🌌' },
+        ];
+        let unlockedAchievements = new Set();
+
+        function checkAchievements() {
+            const spent = state.totalSpent;
+            for (const ach of ACHIEVEMENTS) {
+                if (spent >= ach.threshold && !unlockedAchievements.has(ach.threshold)) {
+                    unlockedAchievements.add(ach.threshold);
+                    showToast(ach.icon, `🏅 成就解锁`, ach.label, 4000);
+                    setTimeout(() => {
+                        triggerCelebration(window.innerWidth / 2, window.innerHeight / 2 - 100, true);
+                    }, 300);
+                }
+            }
+        }
+
+        // ================================================================
+        //  渲染: 商店
+        // ================================================================
+        function renderProducts() {
+            const filtered = currentCategory === 'all' ?
+                PRODUCTS :
+                PRODUCTS.filter(p => p.category === currentCategory);
+            if (filtered.length === 0) {
+                productGrid.innerHTML =
+                    `<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-secondary);">暂无此分类商品</div>`;
+                return;
+            }
+            let html = '';
+            for (const p of filtered) {
+                const canAfford = state.balance >= p.price;
+                const rarityInfo = getRarityInfo(p.rarity);
+                html += `
+                    <div class="product-card ${canAfford ? '' : 'insufficient'}" data-id="${p.id}">
+                        <div class="emoji">${p.emoji}</div>
+                        <div class="name">${p.name}</div>
+                        <div class="rarity ${p.rarity}">${rarityInfo.emoji} ${rarityInfo.label}</div>
+                        <div class="price">¥${fmt(p.price)} <small></small></div>
+                        <button class="buy-btn" data-id="${p.id}" ${canAfford ? '' : 'disabled'}>
+                            ${canAfford ? '🛒 立即购买' : '💰 余额不足'}
+                        </button>
+                    </div>
+                `;
+            }
+            productGrid.innerHTML = html;
+            productGrid.querySelectorAll('.buy-btn:not([disabled])').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(btn.dataset.id);
+                    openConfirm(id, e);
+                    playSound('click');
+                });
+            });
+            blindboxBtn.disabled = state.balance < 100000;
+        }
+
+        // ================================================================
+        //  渲染: 藏品
+        // ================================================================
+        function renderCollection() {
+            const owned = state.collections.filter(c => c.status === 'owned');
+            const totalItems = owned.reduce((sum, c) => sum + (c.quantity || 1), 0);
+            const totalValue = owned.reduce((sum, c) => sum + (c.price * (c.quantity || 1)), 0);
+            const types = new Set(owned.map(c => c.name)).size;
+            collTotalItems.textContent = totalItems;
+            collTotalValue.textContent = fmt(totalValue);
+            collTypes.textContent = types;
+            collectionCountDisplay.textContent = totalItems;
+            collectionBadge.textContent = totalItems;
+
+            if (owned.length === 0) {
+                collectionGrid.innerHTML = `<div class="collection-empty">还没有藏品，去商店挥霍吧！</div>`;
+                return;
+            }
+            const sorted = [...owned].reverse();
+            let html = '';
+            for (const c of sorted) {
+                const rarityInfo = getRarityInfo(c.rarity);
+                const isListing = state.listings.some(l => l.collectionId === c.id);
+                const qty = c.quantity || 1;
+                html += `
+                    <div class="collection-item" data-id="${c.id}">
+                        <div class="emoji">${c.emoji}</div>
+                        <div class="name">${c.name}</div>
+                        <div class="meta">${rarityInfo.emoji} ${rarityInfo.label}</div>
+                        <div class="meta" style="font-size:0.6rem;color:var(--text-secondary);">${c.purchaseTime}</div>
+                        <div class="qty">¥${fmt(c.price)} × ${qty}</div>
+                        ${isListing ? '<div style="font-size:0.6rem;color:#ff6b6b;margin-top:4px;">📌 挂售中</div>' : ''}
+                        ${!isListing && qty > 0 ? `<button class="btn-sell" style="margin-top:6px;padding:4px 16px;border-radius:40px;border:1px solid rgba(255,107,107,0.2);background:transparent;color:#ff6b6b;font-size:0.65rem;cursor:pointer;font-family:var(--font);transition:var(--transition);" data-id="${c.id}">💰 挂售</button>` : ''}
+                    </div>
+                `;
+            }
+            collectionGrid.innerHTML = html;
+            collectionGrid.querySelectorAll('.btn-sell').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.dataset.id);
+                    openSellModal(id);
+                    playSound('click');
+                });
+            });
+            collectionGrid.querySelectorAll('.collection-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const id = parseInt(el.dataset.id);
+                    const coll = state.collections.find(c => c.id === id);
+                    if (coll) {
+                        showToast(coll.emoji, `${coll.name} × ${coll.quantity || 1}`,
+                            `购入价 ¥${fmt(coll.price)} · ${coll.purchaseTime}`);
+                    }
+                });
+            });
+        }
+
+        // ================================================================
+        //  渲染: 社交
+        // ================================================================
+        function renderFeed() {
+            socialBadge.textContent = state.feed.length;
+            if (state.feed.length === 0) {
+                feedList.innerHTML = `<div class="feed-empty">还没有社交动态，购买商品后会显示朋友的互动！</div>`;
+                return;
+            }
+            let html = '';
+            for (const f of state.feed) {
+                const likes = f.likes + (f.liked ? 1 : 0);
+                html += `
+                    <div class="feed-item" data-id="${f.id}">
+                        <div class="feed-head">
+                            <span class="feed-user"><span class="avatar">${f.user.avatar}</span> ${f.user.name}</span>
+                            <span class="feed-time">${f.time}</span>
+                        </div>
+                        <div class="feed-content">${f.content}</div>
+                        <div class="feed-actions">
+                            <span class="feed-like" data-id="${f.id}">❤️ ${likes}</span>
+                            <span class="feed-comment">💬 ${f.comments + randomRange(0, 2)}</span>
+                            <span class="feed-share">🔁 转发</span>
+                        </div>
+                    </div>
+                `;
+            }
+            feedList.innerHTML = html;
+            feedList.querySelectorAll('.feed-like').forEach(el => {
+                el.addEventListener('click', () => {
+                    const id = parseInt(el.dataset.id);
+                    const feed = state.feed.find(f => f.id === id);
+                    if (feed && !feed.liked) {
+                        feed.liked = true;
+                        feed.likes += 1;
+                        playSound('click');
+                        renderFeed();
+                        showToast('❤️', '你点赞了这条动态', '');
+                    }
+                });
+            });
+        }
+
+        // ================================================================
+        //  渲染: 二手市场
+        // ================================================================
+        function renderMarket() {
+            const activeListings = state.listings.filter(l => {
+                if (l.isNpc) return true;
+                const coll = state.collections.find(c => c.id === l.collectionId);
+                return coll && coll.status === 'listing';
+            });
+            marketBadge.textContent = activeListings.length;
+
+            if (activeListings.length === 0) {
+                marketGrid.innerHTML = `<div class="market-empty">二手市场暂时没有商品，去挂售一些吧！</div>`;
+            } else {
+                let html = '';
+                for (const l of activeListings) {
+                    const rarityInfo = getRarityInfo(l.rarity);
+                    const canAfford = state.balance >= l.listingPrice;
+                    const sellerDisplay = l.isNpc ? `${l.npcAvatar || '🧑'} ${l.seller}` : `👤 ${l.seller}`;
+                    html += `
+                        <div class="market-card">
+                            <div class="emoji">${l.emoji}</div>
+                            <div class="name">${l.name}</div>
+                            <div class="seller">${sellerDisplay} · ${rarityInfo.emoji} ${rarityInfo.label}</div>
+                            <div class="m-price">¥${fmt(l.listingPrice)}</div>
+                            <button class="btn-buy-used" data-id="${l.id}" ${canAfford ? '' : 'disabled'}>
+                                ${canAfford ? '🛒 二手购入' : '💰 余额不足'}
+                            </button>
+                        </div>
+                    `;
+                }
+                marketGrid.innerHTML = html;
+                marketGrid.querySelectorAll('.btn-buy-used:not([disabled])').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = parseInt(btn.dataset.id);
+                        if (confirm('确定要购买这件二手商品吗？')) {
+                            buyUsed(id);
+                        }
+                    });
+                });
+            }
+
+            // 我的挂售
+            const myListings = state.listings.filter(l => {
+                if (l.isNpc) return false;
+                const coll = state.collections.find(c => c.id === l.collectionId);
+                return coll && coll.status === 'listing';
+            });
+            if (myListings.length === 0) {
+                myListingsContainer.innerHTML =
+                    `<div style="color:var(--text-secondary);font-size:0.85rem;padding:8px 0;">暂无挂售商品</div>`;
+            } else {
+                let html = '';
+                for (const l of myListings) {
+                    html += `
+                        <div class="listing-item">
+                            <div class="l-info">
+                                <span>${l.emoji}</span>
+                                <span>${l.name}</span>
+                                <span class="l-price">¥${fmt(l.listingPrice)}</span>
+                            </div>
+                            <button class="btn-delist" data-id="${l.id}">下架</button>
+                        </div>
+                    `;
+                }
+                myListingsContainer.innerHTML = html;
+                myListingsContainer.querySelectorAll('.btn-delist').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = parseInt(btn.dataset.id);
+                        if (confirm('确定要下架这件商品吗？')) {
+                            delistItem(id);
+                        }
+                    });
+                });
+            }
+
+            // 最近成交
+            if (state.recentSales.length === 0) {
+                recentSalesContainer.innerHTML =
+                    `<div style="color:var(--text-secondary);font-size:0.85rem;padding:8px 0;">暂无成交记录</div>`;
+            } else {
+                let html = '';
+                for (const s of state.recentSales.slice(0, 10)) {
+                    const premiumTag = s.premium ? ' <span class="premium-tag">溢价</span>' : '';
+                    html += `
+                        <div class="sale-item">
+                            <span>${s.emoji} ${s.name}</span>
+                            <span><span class="sale-highlight">¥${fmt(s.price)}</span> · ${s.buyer} 购自 ${s.seller} ${premiumTag}</span>
+                            <span style="font-size:0.65rem;">${s.time}</span>
+                        </div>
+                    `;
+                }
+                recentSalesContainer.innerHTML = html;
+            }
+        }
+
+        // ================================================================
+        //  挂售弹窗
+        // ================================================================
+        function openSellModal(collectionId) {
+            const coll = state.collections.find(c => c.id === collectionId);
+            if (!coll) return;
+            if (coll.status === 'listing') {
+                showToast('⚠️', '这件商品已在挂售中', '');
+                return;
+            }
+            const defaultPrice = Math.round(coll.price * (0.7 + Math.random() * 0.6));
+            const priceStr = prompt(`为 "${coll.emoji} ${coll.name}" 设定挂售价格 (¥)：`, fmt(defaultPrice));
+            if (priceStr === null) return;
+            const price = parseInt(priceStr.replace(/,/g, ''));
+            if (isNaN(price) || price < 0) {
+                showToast('⚠️', '请输入有效的价格', '');
+                return;
+            }
+            if (price > coll.price * 2) {
+                if (!confirm(`定价 ¥${fmt(price)} 超过原价两倍，确定要挂售吗？`)) return;
+            }
+            listItem(collectionId, price);
+        }
+
+        // ================================================================
+        //  确认弹窗
+        // ================================================================
+        function openConfirm(productId, event) {
+            const product = PRODUCTS.find(p => p.id === productId);
+            if (!product) return;
+            if (state.balance < product.price) {
+                showToast('😅', '余额不足！', '');
+                return;
+            }
+            pendingProductId = productId;
+            const rarityInfo = getRarityInfo(product.rarity);
+            modalEmoji.textContent = product.emoji;
+            modalName.textContent = product.name;
+            modalRarity.textContent = `${rarityInfo.emoji} ${rarityInfo.label}`;
+            modalRarity.style.color = rarityInfo.color;
+            modalPrice.textContent = `¥${fmt(product.price)}`;
+            modalDesc.textContent = product.desc || '一件令人心动的奢侈品。';
+            modalOverlay.classList.add('open');
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('open');
+            pendingProductId = null;
+        }
+        modalConfirm.addEventListener('click', () => {
+            if (pendingProductId !== null) {
+                executePurchase(pendingProductId);
+            }
+        });
+        modalCancel.addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // ================================================================
+        //  Tab 切换
+        // ================================================================
+        function switchTab(tabName) {
+            tabNav.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabName);
+            });
+            Object.keys(tabContents).forEach(key => {
+                tabContents[key].classList.toggle('active', key === tabName);
+            });
+            if (tabName === 'collection') renderCollection();
+            if (tabName === 'social') renderFeed();
+            if (tabName === 'market') renderMarket();
+            if (tabName === 'monopoly') renderMonopoly();
+            if (tabName === 'redlight') renderRedlight();
+        }
+
+        tabNav.addEventListener('click', (e) => {
+            const btn = e.target.closest('.tab-btn');
+            if (!btn) return;
+            const tab = btn.dataset.tab;
+            if (tab) {
+                switchTab(tab);
+                playSound('click');
+            }
+        });
+
+        // ================================================================
+        //  分类筛选
+        // ================================================================
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCategory = btn.dataset.cat;
+                renderProducts();
+                playSound('click');
+            });
+        });
+
+        // ================================================================
+        //  盲盒 & 投资 事件
+        // ================================================================
+        blindboxBtn.addEventListener('click', () => {
+            drawBlindbox();
+            playSound('click');
+        });
+        investBtn.addEventListener('click', () => {
+            investMoney();
+            playSound('click');
+        });
+        withdrawInvestBtn.addEventListener('click', () => {
+            withdrawInvest();
+            playSound('click');
+        });
+        $('#resetMonopolyBtn').addEventListener('click', resetIndustries);
+
+        // ================================================================
+        //  更新 UI
+        // ================================================================
+        function updateUI() {
+            balanceDisplay.textContent = fmt(state.balance);
+            balanceDisplay.className = 'balance-amount';
+            if (state.balance === 0) balanceDisplay.classList.add('zero');
+            else if (state.balance < 100000) balanceDisplay.classList.add('low');
+            totalSpentDisplay.textContent = fmt(state.totalSpent);
+            investAmountDisplay.textContent = fmt(state.investAmount);
+            if (state.investAmount > 0) {
+                investStatus.textContent =
+                    `已投资 ¥${fmt(state.investAmount)}，累计收益 ¥${fmt(state.investEarnings)}`;
+            } else {
+                investStatus.textContent = '未投资';
+            }
+            renderProducts();
+            renderCollection();
+            renderFeed();
+            renderMarket();
+            // 垄断和红灯区在切换时渲染
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab) {
+                const id = activeTab.id;
+                if (id === 'tab-monopoly') renderMonopoly();
+                if (id === 'tab-redlight') renderRedlight();
+            }
+            const owned = state.collections.filter(c => c.status === 'owned');
+            const totalItems = owned.reduce((sum, c) => sum + (c.quantity || 1), 0);
+            collectionCountDisplay.textContent = totalItems;
+            collectionBadge.textContent = totalItems;
+            blindboxBtn.disabled = state.balance < 100000;
+        }
+
+        // ================================================================
+        //  重置
+        // ================================================================
+        function resetAll() {
+            if (!confirm('确定要重置所有数据吗？所有内容将清除。')) return;
+            if (marketTimer) clearInterval(marketTimer);
+            if (investTimer) clearInterval(investTimer);
+            if (npcListingTimer) clearInterval(npcListingTimer);
+
+            state.balance = INITIAL_BALANCE;
+            state.totalSpent = 0;
+            state.purchaseCount = 0;
+            state.collections = [];
+            state.listings = [];
+            state.feed = [];
+            state.recentSales = [];
+            state.nextId = 1;
+            state.nextFeedId = 1;
+            state.nextListingId = 1;
+            state.investAmount = 0;
+            state.investTime = null;
+            state.investEarnings = 0;
+            state.lastInvestUpdate = null;
+            unlockedAchievements = new Set();
+            initIndustries();
+            state.redlightStory = '';
+            saveState();
+            updateUI();
+            showToast('🔄', '已重置，重新开始挥霍吧！', '');
+            switchTab('shop');
+            startSimulators();
+        }
+
+        // ================================================================
+        //  模拟器启动
+        // ================================================================
+        function startSimulators() {
+            if (marketTimer) clearInterval(marketTimer);
+            marketTimer = setInterval(simulateMarket, randomRange(8000, 14000));
+            setTimeout(simulateMarket, 3000);
+
+            if (investTimer) clearInterval(investTimer);
+            investTimer = setInterval(updateInvestEarnings, 60000);
+            setTimeout(updateInvestEarnings, 5000);
+
+            if (npcListingTimer) clearInterval(npcListingTimer);
+            npcListingTimer = setInterval(createNpcListing, randomRange(15000, 30000));
+            setTimeout(createNpcListing, 5000);
+        }
+
+        // ================================================================
+        //  持久化
+        // ================================================================
+        function saveState() {
+            try {
+                const data = {
+                    balance: state.balance,
+                    totalSpent: state.totalSpent,
+                    purchaseCount: state.purchaseCount,
+                    collections: state.collections,
+                    listings: state.listings,
+                    feed: state.feed,
+                    recentSales: state.recentSales,
+                    nextId: state.nextId,
+                    nextFeedId: state.nextFeedId,
+                    nextListingId: state.nextListingId,
+                    investAmount: state.investAmount,
+                    investTime: state.investTime,
+                    investEarnings: state.investEarnings,
+                    lastInvestUpdate: state.lastInvestUpdate,
+                    industries: state.industries,
+                    unlocked: Array.from(unlockedAchievements),
+                };
+                localStorage.setItem('spreeSimulator5', JSON.stringify(data));
+            } catch (_) {}
+        }
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem('spreeSimulator5');
+                if (!raw) return false;
+                const data = JSON.parse(raw);
+                state.balance = data.balance ?? INITIAL_BALANCE;
+                state.totalSpent = data.totalSpent ?? 0;
+                state.purchaseCount = data.purchaseCount ?? 0;
+                state.collections = data.collections ?? [];
+                state.listings = data.listings ?? [];
+                state.feed = data.feed ?? [];
+                state.recentSales = data.recentSales ?? [];
+                state.nextId = data.nextId ?? 1;
+                state.nextFeedId = data.nextFeedId ?? 1;
+                state.nextListingId = data.nextListingId ?? 1;
+                state.investAmount = data.investAmount ?? 0;
+                state.investTime = data.investTime ?? null;
+                state.investEarnings = data.investEarnings ?? 0;
+                state.lastInvestUpdate = data.lastInvestUpdate ?? null;
+                if (data.industries) state.industries = data.industries;
+                else initIndustries();
+                if (data.unlocked) unlockedAchievements = new Set(data.unlocked);
+                for (const c of state.collections) {
+                    if (!c.status) c.status = 'owned';
+                    if (!c.quantity) c.quantity = 1;
+                }
+                // 清理无效挂售（玩家）
+                state.listings = state.listings.filter(l => {
+                    if (l.isNpc) return true;
+                    const coll = state.collections.find(c => c.id === l.collectionId);
+                    return coll && coll.status === 'listing';
+                });
+                return true;
+            } catch (_) { return false; }
+        }
+
+        // ================================================================
+        //  初始化
+        // ================================================================
+        function init() {
+            const loaded = loadState();
+            if (!loaded || state.collections.length === 0) {
+                state.balance = INITIAL_BALANCE;
+                state.totalSpent = 0;
+                state.purchaseCount = 0;
+                state.collections = [];
+                state.listings = [];
+                state.feed = [];
+                state.recentSales = [];
+                state.nextId = 1;
+                state.nextFeedId = 1;
+                state.nextListingId = 1;
+                state.investAmount = 0;
+                state.investTime = null;
+                state.investEarnings = 0;
+                state.lastInvestUpdate = null;
+                initIndustries();
+                unlockedAchievements = new Set();
+                saveState();
+                setTimeout(() => {
+                    const welcomeFeed = {
+                        id: generateFeedId(),
+                        type: 'purchase',
+                        user: { name: '系统', avatar: '🤖' },
+                        content: '👑 欢迎来到挥霍模拟器·终极统治！你可以购买商品、盲盒抽奖、投资理财、操控行业、体验红灯区剧情！',
+                        time: getTime(),
+                        likes: 0,
+                        comments: 0,
+                        liked: false,
+                    };
+                    state.feed.unshift(welcomeFeed);
+                    saveState();
+                    updateUI();
+                }, 300);
+            }
+
+            updateUI();
+            startSimulators();
+
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'r') {
+                    e.preventDefault();
+                    resetAll();
+                }
+                if (e.key === '1') switchTab('shop');
+                if (e.key === '2') switchTab('collection');
+                if (e.key === '3') switchTab('social');
+                if (e.key === '4') switchTab('market');
+                if (e.key === '5') switchTab('monopoly');
+                if (e.key === '6') switchTab('redlight');
+            });
+
+            console.log('👑 挥霍模拟器 · 终极统治 已启动！');
+            console.log('快捷键: 1-商店 2-藏品 3-社交 4-市场 5-垄断 6-红灯区 Ctrl+R-重置');
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+        window.addEventListener('beforeunload', saveState);
+        window.resetSim = resetAll;
+    </script>
+</body>
+</html>

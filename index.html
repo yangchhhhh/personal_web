@@ -188,7 +188,7 @@
         }
         .poker-container {
             position: relative;
-            width: 68rem; /* 增加宽度以适应更多卡牌 */
+            width: 80rem;
             height: 35rem;
         }
         .poker {
@@ -957,6 +957,46 @@
                 gap: 1rem;
             }
         }
+
+        /* ---------- 项目卡片样式 ---------- */
+        #projectCardContainer {
+            display: flex;
+            justify-content: center;
+            margin: 3rem 0 4rem;
+            width: 100%;
+        }
+        #projectCard {
+            flex: 0 0 auto;
+            background: rgba(13,17,23,0.9);
+            border: 2px solid #17f700;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 0 30px rgba(23,247,0,0.2);
+            cursor: pointer;
+            transition: 0.3s;
+            text-align: center;
+            max-width: 90%;
+            width: 350px; /* 固定宽度，彻底居中 */
+        }
+        #projectCard:hover {
+            transform: scale(1.02);
+            border-color: #fff;
+            box-shadow: 0 0 40px rgba(23,247,0,0.5);
+        }
+
+        #trafficIframeContainer {
+            display: none;
+            width: 100%;
+            height: 90vh;
+            position: relative;
+            margin-top: 2rem;
+        }
+        #trafficIframeContainer iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -991,6 +1031,8 @@
                 <div class="poker" data-page="game" style="background:#17f700;"><h2 style="color:#0d1117">个人游戏</h2></div>
                 <div class="poker" data-page="memory" style="background:#ffb347;"><h2 style="color:#4a2a1a">温馨回忆录</h2></div>
                 <div class="poker" data-page="expected" style="background:#6c5ce7;"><h2 style="color:#fff">预期校准器</h2></div>
+                <div class="poker" data-page="traffic" style="background:#f97316;"><h2 style="color:#fff">🚦 智能编队</h2></div>
+                <div class="poker" data-page="spree" style="background:#d3e90b;"><h2 style="color:#fff">挥霍模拟器</h2></div>
                 <div class="poker_top" id="pokerTopClick"></div>
             </div>
             <button class="enter-btn" id="enterCommandBtn">执行指令 : 个人游戏</button>
@@ -1031,7 +1073,6 @@
         <iframe id="gameFrame" src="about:blank" allowfullscreen sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-pointer-lock" tabindex="0"></iframe>
         <button class="back-to-gallery" id="backToGalleryBtn">← 返回游戏库</button>
     </div>
-    <!-- 温馨提示浮层 -->
     <div class="game-tip-card" id="gameWarmTip">
         <p>✨ 此界面可以无限上下左右拖动——更多游戏尽请期待上线~ 🎮</p>
     </div>
@@ -1049,7 +1090,6 @@
             <div class="contact-item" style="border:none;"><span>Email Address:</span> <span>chenvipblue@foxmail.com</span></div>
         </div>
         
-        <!-- 留言表单 -->
         <div class="message-form" style="margin-top: 3rem;">
             <h2 style="color:#fff; font-size: 2rem; margin-bottom: 2rem;">//leave_message</h2>
             <form id="messageForm">
@@ -1067,7 +1107,6 @@
             <div id="messageStatus" style="margin-top: 1rem; color: #17f700;"></div>
         </div>
 
-        <!-- 基金邮件订阅/收发 -->
         <div class="message-form" style="margin-top: 3rem;">
             <h2 style="color:#fff; font-size: 2rem; margin-bottom: 2rem;">//send_etf_report</h2>
             <form id="fundReportForm">
@@ -1089,7 +1128,6 @@
             <div id="fundReportStatus" style="margin-top: 1rem; color: #17f700;"></div>
         </div>
         
-        <!-- 显示留言 -->
         <div class="messages-list" style="margin-top: 3rem;">
             <h2 style="color:#fff; font-size: 2rem; margin-bottom: 2rem;">//messages</h2>
             <div id="messagesContainer"></div>
@@ -1102,7 +1140,19 @@
     <h1 style="text-align:center; font-size:5rem; color:#fff; padding-top:8vh;">temporal_logs</h1>
     <div class="timeline-container" id="timelineRoot">
         <div class="timeline-line"></div>
-        <!-- 时间轴节点将由 JS 动态生成 -->
+    </div>
+
+    <!-- 项目卡片（潮汐车道机器人） -->
+    <div id="projectCardContainer">
+        <div id="projectCard">
+            <img src="images/traffic_thumb.png" alt="潮汐车道机器人" style="width:100%; max-width:300px; border-radius:1rem; border:1px solid #17f700;">
+            <h3 style="color:#17f700; margin-top:1rem;">🚦 潮汐车道 · 智能编队调度系统</h3>
+            <p style="color:#ccc; font-size:0.9rem;">点击进入交互仿真</p>
+        </div>
+    </div>
+
+    <div id="trafficIframeContainer">
+        <iframe src="traffic_bot.html"></iframe>
     </div>
 </div>
 
@@ -1227,6 +1277,11 @@
     </div>
 </div>
 
+<!-- ===== 页面8: 挥霍模拟器 ===== -->
+<div id="page-spree" class="page">
+    <iframe src="spree.html" style="width:100%; height:100vh; border:none; display:block;"></iframe>
+</div>
+
 <script>
     // ---------- 全局路由 & 单页切换核心 ----------
     const pages = {
@@ -1237,7 +1292,8 @@
         relax: document.getElementById('page-relax'),
         finance: document.getElementById('page-finance'),
         memory: document.getElementById('page-memory'),
-        expected: document.getElementById('page-expected') 
+        expected: document.getElementById('page-expected'),
+        spree: document.getElementById('page-spree')
     };
     let currentPage = 'main';
     let globalLenis = null;
@@ -1247,12 +1303,42 @@
         out() { this.container.classList.add('loading_out'); }
     };
 
+    // 项目卡片控制
+    const projectCard = document.getElementById('projectCard');
+    const timelineRoot = document.getElementById('timelineRoot');
+    const projectCardContainer = document.getElementById('projectCardContainer');
+    const trafficIframeContainer = document.getElementById('trafficIframeContainer');
+
+    function showTrafficProject() {
+        if (timelineRoot) timelineRoot.style.display = 'none';
+        if (projectCardContainer) projectCardContainer.style.display = 'none';
+        if (trafficIframeContainer) trafficIframeContainer.style.display = 'block';
+    }
+
+    function hideTrafficProject() {
+        if (trafficIframeContainer) trafficIframeContainer.style.display = 'none';
+        if (timelineRoot) timelineRoot.style.display = 'block';
+        if (projectCardContainer) projectCardContainer.style.display = 'block';
+    }
+
+    if (projectCard) {
+        projectCard.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showTrafficProject();
+        });
+    }
+
     function switchToPage(pageId, showLoadingEffect = true) {
         if (currentPage === pageId) return;
+        if (currentPage === 'projects' && trafficIframeContainer.style.display === 'block') {
+            hideTrafficProject();
+        }
         if (currentPage === 'memory' && window.__memoryCleanup) window.__memoryCleanup();
         const doSwitch = () => {
-            Object.keys(pages).forEach(id => pages[id].classList.remove('active'));
-            pages[pageId].classList.add('active');
+            Object.keys(pages).forEach(id => {
+                if (pages[id]) pages[id].classList.remove('active');
+            });
+            if (pages[pageId]) pages[pageId].classList.add('active');
             currentPage = pageId;
             document.getElementById('globalBackBtn').classList.toggle('hide', pageId === 'main');
             if (pageId === 'game') {
@@ -1271,6 +1357,12 @@
                 if (tipBox) tipBox.style.display = 'flex';
             }
             if (pageId === 'projects') reinitProjectsToggle();
+            if (pageId === 'projects' && window._showTrafficOnLoad) {
+                setTimeout(() => {
+                    showTrafficProject();
+                    window._showTrafficOnLoad = false;
+                }, 300);
+            }
             if (pageId === 'relax') initRelaxPage();
             if (pageId === 'memory') initmemoryScroll();
             if (globalLenis) globalLenis.scrollTo(0, { duration: 0 });
@@ -1283,9 +1375,14 @@
         } else doSwitch();
     }
 
-    function goBackHome() { switchToPage('main'); }
+    function goBackHome() {
+        if (currentPage === 'projects' && trafficIframeContainer.style.display === 'block') {
+            hideTrafficProject();
+        }
+        switchToPage('main');
+    }
 
-    // ---------- GAME 页面无限滚动 + 居中偏移 ----------
+    // ---------- GAME 页面无限滚动 ----------
     let gamePhotobox = null;
     function reinitGamePage() {
         const container = document.querySelector('#page-game .infinite-photos');
@@ -1416,7 +1513,7 @@
         });
     }
 
-    // ---------- PROJECTS 时间轴激活切换 ----------
+    // ---------- PROJECTS 时间轴 ----------
     function reinitProjectsToggle() {
         const items = document.querySelectorAll('#page-projects .timeline-item');
         items.forEach(item => {
@@ -1578,12 +1675,14 @@
     let pokers = [...pokerDeck.querySelectorAll('.poker:not(.poker_top)')];
     const transforms = [
         "rotate(-14deg) translate(0%, 0%)",
-        "rotate(-9deg) translate(28%, -6%)",
-        "rotate(-4deg) translate(52%, -12%)",
-        "rotate(1deg) translate(76%, -18%)",
-        "rotate(6deg) translate(100%, -24%)",
-        "rotate(11deg) translate(124%, -30%)",
-        "rotate(16deg) translate(148%, -36%)"
+        "rotate(-10deg) translate(25%, -5%)",
+        "rotate(-6deg) translate(48%, -10%)",
+        "rotate(-2deg) translate(70%, -15%)",
+        "rotate(2deg) translate(92%, -20%)",
+        "rotate(6deg) translate(114%, -25%)",
+        "rotate(10deg) translate(136%, -30%)",
+        "rotate(14deg) translate(158%, -35%)",
+        "rotate(18deg) translate(180%, -40%)"
     ];
     function updatePokerUI() {
         const bottomCard = pokers.pop();
@@ -1599,14 +1698,23 @@
         return topCard.getAttribute('data-page');
     }
     function cyclePoker() { updatePokerUI(); }
-    function executePoker() { const pageId = pokers[0].getAttribute('data-page'); if (pageId) switchToPage(pageId); }
+    function executePoker() {
+        const topCard = pokers[0];
+        const pageId = topCard.getAttribute('data-page');
+        if (pageId === 'traffic') {
+            window._showTrafficOnLoad = true;
+            switchToPage('projects');
+        } else if (pageId) {
+            switchToPage(pageId);
+        }
+    }
     document.getElementById('pokerTopClick')?.addEventListener('click', cyclePoker);
     document.getElementById('enterCommandBtn')?.addEventListener('click', executePoker);
     document.getElementById('globalBackBtn')?.addEventListener('click', goBackHome);
     document.getElementById('backToGalleryBtn')?.addEventListener('click', window.backToGallery);
     updatePokerUI();
 
-    // Lenis平滑滚动
+    // Lenis
     globalLenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
     function raf(time) { globalLenis.raf(time); requestAnimationFrame(raf); }
     requestAnimationFrame(raf);
@@ -1737,7 +1845,6 @@
         if (speedSlider) speedSlider.addEventListener('input', (e) => { memoryScrollSpeed = parseInt(e.target.value); });
         setTimeout(() => { if(globalLenis) globalLenis.resize(); }, 200);
         if (window.location.hash === '#game') switchToPage('game');
-        // 确保游戏页面提示框初始显示
         const tipBox = document.getElementById('gameWarmTip');
         if (tipBox) {
             if (document.getElementById('page-game').classList.contains('active') && document.getElementById('gamePhotosContainer')?.style.display !== 'none') tipBox.style.display = 'flex';

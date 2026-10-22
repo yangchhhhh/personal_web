@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>网页格斗游戏：平台大乱斗</title>
+    <style>
+        body { margin: 0; background-color: #111; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Segoe UI', sans-serif; overflow: hidden; color: white; }
+        #gameWrapper { position: relative; box-shadow: 0 0 30px rgba(66, 135, 245, 0.3); border: 2px solid #333; border-radius: 8px; overflow: hidden; }
+        canvas { background: linear-gradient(to bottom, #1e1e28 0%, #111118 100%); display: block; }
+        
+        /* UI 层 (固定在屏幕上，不随镜头移动) */
+        #ui { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
+        .status-area { width: 35%; display: flex; flex-direction: column; gap: 5px; }
+        .bar-container { width: 100%; background: #222; border: 2px solid #555; border-radius: 4px; overflow: hidden; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .health-bar-container { height: 25px; }
+        .energy-bar-container { height: 10px; border-color: #444; }
+        .bar { height: 100%; transition: width 0.2s ease-out; position: absolute; top: 0; }
+        #playerHealth { background: #4caf50; width: 100%; right: 0; transform-origin: right;}
+        #playerEnergy { background: #00bcd4; width: 100%; right: 0;}
+        #enemyHealth { background: #f44336; width: 100%; left: 0;}
+        .status-area.player { align-items: flex-end; }
+        .status-area.enemy { align-items: flex-start; }
+        #timer { color: #fff; font-size: 48px; font-weight: 900; text-shadow: 0 0 10px rgba(255,255,255,0.5); background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 8px; border: 2px solid #555; height: 60px; line-height: 60px; }
+        
+        #gameOverScreen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
+        #displayText { color: white; font-size: 72px; font-weight: bold; text-shadow: 4px 4px 0 #000; margin-bottom: 30px; letter-spacing: 5px; }
+        button { padding: 15px 40px; font-size: 24px; font-weight: bold; cursor: pointer; background: #4287f5; color: white; border: none; border-radius: 5px; transition: all 0.1s; }
+        button:active { transform: translateY(4px); }
+        #controls-hint { position: absolute; bottom: 15px; width: 100%; text-align: center; color: #aaa; font-size: 14px; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 0;}
+        .key { background: #333; padding: 2px 6px; border-radius: 3px; color: #fff; border-bottom: 2px solid #111; }
+    </style>
+</head>
+<body>
+
+<div id="gameWrapper">
+    <div id="ui">
+        <div class="status-area player">
+            <div class="bar-container health-bar-container"><div id="playerHealth" class="bar"></div></div>
+            <div class="bar-container energy-bar-container"><div id="playerEnergy" class="bar"></div></div>
+        </div>
+        <div id="timer">60</div>
+        <div class="status-area enemy">
+            <div class="bar-container health-bar-container"><div id="enemyHealth" class="bar"></div></div>
+            <div class="bar-container energy-bar-container" style="opacity: 0;"><div id="enemyEnergy" class="bar"></div></div>
+        </div>
+    </div>
+    
+    <div id="gameOverScreen">
+        <div id="displayText">KO!</div>
+        <button onclick="restartGame()">再来一局</button>
+    </div>
+    
+    <div id="controls-hint">
+        移动:<span class="key">A</span>/<span class="key">D</span> | 
+        跳跃:<span class="key">空格</span> | 
+        下蹲/下平台:<span class="key">S</span> | 
+        攻击:<span class="key">J</span> | 
+        波:<span class="key">K</span> | 
+        冲刺:<span class="key">L</span>
+    </div>
+    <canvas id="gameCanvas" width="1024" height="576"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const c = canvas.getContext('2d');
+    
+    // === 游戏全局设置 ===
+    const gravity = 0.7;
+    const MAP_WIDTH = 2000; // 地图总宽度变大
+    const FLOOR_Y = canvas.height - 50;
+    
+    // 镜头对象
+    let camera = { x: 0 };
+    let shakeFrames = 0;
+    let shakeIntensity = 0;
+
+    // === 类定义 ===
+    class Sprite {
+        constructor({ position, velocity, color = 'red', isEnemy = false }) {
+            this.position = position;
+            this.velocity = velocity;
+            this.originalHeight = 150;
+            this.crouchHeight = 80;
+            this.width = 50;
+            this.height = this.originalHeight;
+            this.isEnemy = isEnemy;
+            
+            // 战斗属性
+            this.color = color;
+            this.isAttacking = false;
+            this.health = 100;
+            this.energy = 100;
+            this.dead = false;
+            
+            // 状态控制
+            this.hitstun = 0; 
+            this.facingRight = !isEnemy;
+            this.isDashing = false;
+            this.isCrouching = false;
+            this.onPlatform = false; // 是否站在悬浮平台上
+            
+            // 攻击判定框
+            this.attackBox = {
+                position: { x: this.position.x, y: this.position.y },
+                offset: { x: 0, y: 0 },
+                width: 120,
+                height: 60
+            };
+            this.canShoot = true;
+        }
+
+        draw() {
+            if (this.hitstun > 0 && this.hitstun % 4 < 2) return; // 受击闪烁
+
+            // 绘制角色
+            c.fillStyle = this.color;
+            c.fillRect(this.position.x, this.position.y, this.width, this.height);
+            
+            // 绘制“眼睛”
+            c.fillStyle = 'rgba(255,255,255,0.8)';
+            let eyeX = this.facingRight ? this.position.x + 35 : this.position.x + 5;
+            let eyeY = this.position.y + (this.isCrouching ? 10 : 20);
+            c.fillRect(eyeX, eyeY, 10, 10);
+            
+            // 冲刺残影
+            if (this.isDashing) {
+                c.globalAlpha = 0.3;
+                c.fillRect(this.position.x - this.velocity.x * 2, this.position.y, this.width, this.height);
+                c.globalAlpha = 1.0;
+            }
+            
+            // 攻击特效(刀光)
+            if (this.isAttacking) {
+                const gradient = c.createLinearGradient(this.attackBox.position.x, 0, this.attackBox.position.x + this.attackBox.width, 0);
+                if (this.facingRight) {
+                    gradient.addColorStop(0, 'rgba(255,255,255,0.8)');
+                    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+                } else {
+                    gradient.addColorStop(0, 'rgba(255,255,255,0)');
+                    gradient.addColorStop(1, 'rgba(255,255,255,0.8)');
+                }
+                c.fillStyle = gradient;
+                c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height);
+            }
+        }
+
+        update() {
+            this.draw();
+            if (this.dead) return;
+
+            // 能量恢复
+            if (this.energy < 100) {
+                this.energy += 0.2;
+                if(!this.isEnemy) document.querySelector('#playerEnergy').style.width = this.energy + '%';
+            }
+            if (this.hitstun > 0) this.hitstun--;
+            
+            // 处理下蹲状态及高度变化
+            if (this.isCrouching && this.height === this.originalHeight) {
+                this.height = this.crouchHeight;
+                this.position.y += (this.originalHeight - this.crouchHeight); // 贴近地面
+                this.velocity.x = 0; // 下蹲不能走
+            } else if (!this.isCrouching && this.height === this.crouchHeight) {
+                this.height = this.originalHeight;
+                this.position.y -= (this.originalHeight - this.crouchHeight);
+            }
+            
+            // 攻击框跟随
+            this.attackBox.offset.x = this.facingRight ? 0 : - (this.attackBox.width - this.width);
+            this.attackBox.position.x = this.position.x + this.attackBox.offset.x;
+            this.attackBox.position.y = this.position.y + (this.isCrouching ? 10 : 30); 
+            
+            this.position.x += this.velocity.x;
+            this.position.y += this.velocity.y;
+            
+            // 悬浮平台碰撞检测 (仅在下落且未按下蹲时判定)
+            this.onPlatform = false;
+            if (this.velocity.y > 0 && !this.isCrouching) {
+                for (let plat of platforms) {
+                    // 检查上一帧脚底位置是否在平台上方，当前帧是否越过平台
+                    if (this.position.y + this.height - this.velocity.y <= plat.y &&
+                        this.position.y + this.height >= plat.y &&
+                        this.position.x + this.width > plat.x &&
+                        this.position.x < plat.x + plat.w) {
+                        
+                        this.velocity.y = 0;
+                        this.position.y = plat.y - this.height;
+                        this.onPlatform = true;
+                        break;
+                    }
+                }
+            }
+
+            // 地面碰撞
+            if (!this.onPlatform) {
+                if (this.position.y + this.height + this.velocity.y >= FLOOR_Y) {
+                    this.velocity.y = 0;
+                    this.position.y = FLOOR_Y - this.height;
+                    if (this.hitstun > 0 && Math.abs(this.velocity.x) > 0) this.velocity.x *= 0.8; 
+                } else {
+                    this.velocity.y += gravity; // 施加重力
+                }
+            }
+            
+            // 大地图边界限制
+            if (this.position.x < 0) this.position.x = 0;
+            if (this.position.x + this.width > MAP_WIDTH) this.position.x = MAP_WIDTH - this.width;
+        }
+
+        attack() {
+            if (this.hitstun > 0 || this.isDashing) return;
+            this.isAttacking = true;
+            setTimeout(() => { this.isAttacking = false; }, 100);
+        }
+
+        shoot() {
+            if(!this.canShoot || this.dead || this.hitstun > 0 || this.energy < 30) return;
+            this.energy -= 30;
+            if(!this.isEnemy) document.querySelector('#playerEnergy').style.width = this.energy + '%';
+            const dir = this.facingRight ? 1 : -1;
+            
+            // 发波高度随是否下蹲改变
+            let shootY = this.position.y + (this.isCrouching ? 20 : 40);
+            
+            projectiles.push(new Projectile({
+                position: { x: this.position.x + (dir === 1 ? this.width : -40), y: shootY },
+                velocity: { x: dir * 12, y: 0 },
+                owner: this,
+                color: this.isEnemy ? '#ff5555' : '#55ffff'
+            }));
+            
+            this.canShoot = false;
+            setTimeout(() => this.canShoot = true, 500); 
+        }
+
+        dash() {
+            if (this.hitstun > 0 || this.isDashing || this.energy < 25 || this.isCrouching) return;
+            this.energy -= 25;
+            if(!this.isEnemy) document.querySelector('#playerEnergy').style.width = this.energy + '%';
+            this.isDashing = true;
+            this.velocity.x = this.facingRight ? 20 : -20;
+            this.velocity.y = 0;
+            createParticles(this.position.x + this.width/2, this.position.y + this.height/2, this.color, 15);
+            setTimeout(() => { this.isDashing = false; this.velocity.x = 0; }, 150);
+        }
+
+        takeDamage(amount, knockbackDir, isHeavy = false) {
+            this.health -= amount;
+            this.hitstun = isHeavy ? 30 : 15;
+            this.velocity.x = knockbackDir * (isHeavy ? 12 : 6);
+            this.velocity.y = isHeavy ? -8 : -4;
+            this.isCrouching = false; // 受击强制站起
+            
+            const healthBar = this.isEnemy ? '#enemyHealth' : '#playerHealth';
+            document.querySelector(healthBar).style.width = Math.max(0, this.health) + '%';
+            
+            floatingTexts.push(new FloatingText({ x: this.position.x + 25, y: this.position.y, text: `-${amount}` }));
+            shakeFrames = isHeavy ? 15 : 8;
+            shakeIntensity = isHeavy ? 10 : 5;
+
+            if (this.health <= 0) {
+                this.dead = true;
+                this.velocity.x = knockbackDir * 10;
+                this.velocity.y = -10;
+                determineWinner({ player, enemy, timerId });
+            }
+        }
+    }
+
+    // 可破坏物体类
+    class Destructible {
+        constructor(x, y, type) {
+            this.position = { x, y };
+            this.width = 60;
+            this.height = 60;
+            this.type = type; // 'wood' 或 'barrel'
+            this.health = type === 'barrel' ? 20 : 30; // 木箱硬一点，炸药桶脆一点
+            this.dead = false;
+        }
+        
+        draw() {
+            if(this.dead) return;
+            c.fillStyle = this.type === 'barrel' ? '#d32f2f' : '#795548'; // 桶红，木箱棕
+            c.fillRect(this.position.x, this.position.y, this.width, this.height);
+            
+            // 画点装饰纹理
+            c.strokeStyle = '#000';
+            c.lineWidth = 2;
+            c.strokeRect(this.position.x, this.position.y, this.width, this.height);
+            if(this.type === 'barrel') {
+                c.fillStyle = '#111';
+                c.fillRect(this.position.x, this.position.y + 20, this.width, 10);
+                c.fillRect(this.position.x, this.position.y + 40, this.width, 10);
+            } else {
+                c.beginPath();
+                c.moveTo(this.position.x, this.position.y);
+                c.lineTo(this.position.x + this.width, this.position.y + this.height);
+                c.stroke();
+            }
+        }
+
+        takeDamage(amount) {
+            if(this.dead) return;
+            this.health -= amount;
+            // 飘字和粒子
+            floatingTexts.push(new FloatingText({ x: this.position.x + 30, y: this.position.y, text: `-${amount}` }));
+            createParticles(this.position.x + 30, this.position.y + 30, '#fff', 5);
+            
+            if (this.health <= 0) {
+                this.dead = true;
+                if (this.type === 'barrel') this.explode();
+                else createParticles(this.position.x + 30, this.position.y + 30, '#795548', 30); // 木屑
+            }
+        }
+
+        explode() {
+            // 大量爆炸特效
+            createParticles(this.position.x + 30, this.position.y + 30, '#ff9800', 50);
+            createParticles(this.position.x + 30, this.position.y + 30, '#f44336', 30);
+            shakeFrames = 20; shakeIntensity = 15;
+            
+            // 范围伤害判定 (距离中心点 200 像素内)
+            const blastRadius = 200;
+            const centerX = this.position.x + this.width/2;
+            const centerY = this.position.y + this.height/2;
+
+            [player, enemy].forEach(entity => {
+                if(!entity.dead) {
+                    const ex = entity.position.x + entity.width/2;
+                    const ey = entity.position.y + entity.height/2;
+                    const dist = Math.hypot(centerX - ex, centerY - ey);
+                    if(dist < blastRadius) {
+                        const dir = ex > centerX ? 1 : -1;
+                        entity.takeDamage(30, dir, true); // 爆炸造成 30 点重击伤害！
+                    }
+                }
+            });
+        }
+    }
+
+    class Projectile { /* ... 保持原样 ... */ 
+        constructor({ position, velocity, owner, color }) {
+            this.position = position; this.velocity = velocity; this.radius = 12; this.owner = owner; this.color = color; this.markedForDeletion = false;
+        }
+        draw() {
+            c.shadowColor = this.color; c.shadowBlur = 15; c.beginPath(); c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2); c.fillStyle = '#fff'; c.fill(); c.closePath(); c.shadowBlur = 0;
+        }
+        update() {
+            this.draw(); this.position.x += this.velocity.x;
+            if(Math.random() < 0.5) particles.push(new Particle({ position: { x: this.position.x, y: this.position.y }, velocity: { x: (Math.random()-0.5)*2, y: (Math.random()-0.5)*2 }, color: this.color, radius: 3 }));
+            if (this.position.x < 0 || this.position.x > MAP_WIDTH) this.markedForDeletion = true; // 超出大地图销毁
+        }
+    }
+    class Particle { /* ... 保持原样 ... */ 
+        constructor({ position, velocity, color, radius = 4 }) { this.position = position; this.velocity = velocity; this.radius = radius; this.color = color; this.alpha = 1; }
+        draw() { c.save(); c.globalAlpha = this.alpha; c.beginPath(); c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2); c.fillStyle = this.color; c.fill(); c.restore(); }
+        update() { this.draw(); this.velocity.y += 0.1; this.position.x += this.velocity.x; this.position.y += this.velocity.y; this.alpha -= 0.04; }
+    }
+    class FloatingText { /* ... 保持原样 ... */ 
+        constructor({ x, y, text }) { this.x = x + (Math.random() - 0.5)*20; this.y = y; this.text = text; this.alpha = 1; this.velocity = -2; }
+        draw() { c.save(); c.globalAlpha = this.alpha; c.font = 'bold 24px Arial'; c.fillStyle = '#ffcc00'; c.strokeStyle = '#000'; c.lineWidth = 3; c.strokeText(this.text, this.x, this.y); c.fillText(this.text, this.x, this.y); c.restore(); }
+        update() { this.draw(); this.y += this.velocity; this.alpha -= 0.02; }
+    }
+
+    // === 游戏变量与初始化 ===
+    let player, enemy, keys, projectiles, particles, floatingTexts, destructibles, platforms, timer, timerId;
+
+    function initGame() {
+        player = new Sprite({ position: { x: 300, y: 0 }, velocity: { x: 0, y: 0 }, color: '#4287f5', isEnemy: false });
+        enemy = new Sprite({ position: { x: 1600, y: 0 }, velocity: { x: 0, y: 0 }, color: '#f44336', isEnemy: true });
+
+        keys = { a: { pressed: false }, d: { pressed: false }, w: { pressed: false }, s: { pressed: false } };
+        projectiles = []; particles = []; floatingTexts = [];
+        
+        // 生成平台
+        platforms = [
+            { x: 500, y: FLOOR_Y - 120, w: 200, h: 20 },
+            { x: 800, y: FLOOR_Y - 220, w: 200, h: 20 },
+            { x: 1200, y: FLOOR_Y - 150, w: 300, h: 20 }
+        ];
+
+        // 生成可破坏物
+        destructibles = [
+            new Destructible(600, FLOOR_Y - 60, 'wood'),
+            new Destructible(600, FLOOR_Y - 120, 'barrel'),
+            new Destructible(1300, FLOOR_Y - 170, 'barrel'), // 平台上的桶
+            new Destructible(900, FLOOR_Y - 60, 'wood')
+        ];
+
+        timer = 99; // 大地图时间给长一点
+        document.querySelector('#playerHealth').style.width = '100%'; document.querySelector('#enemyHealth').style.width = '100%'; document.querySelector('#playerEnergy').style.width = '100%'; document.querySelector('#gameOverScreen').style.display = 'none'; document.querySelector('#timer').innerHTML = timer;
+        clearTimeout(timerId); decreaseTimer();
+    }
+
+    // === 工具与判定 ===
+    function rectangularCollision({ rectangle1, rectangle2 }) {
+        return ( rectangle1.attackBox.position.x + rectangle1.attackBox.width >= rectangle2.position.x && rectangle1.attackBox.position.x <= rectangle2.position.x + rectangle2.width && rectangle1.attackBox.position.y + rectangle1.attackBox.height >= rectangle2.position.y && rectangle1.attackBox.position.y <= rectangle2.position.y + rectangle2.height );
+    }
+    function circleRectCollision({ circle, rect }) {
+        return ( circle.position.x + circle.radius >= rect.position.x && circle.position.x - circle.radius <= rect.position.x + rect.width && circle.position.y + circle.radius >= rect.position.y && circle.position.y - circle.radius <= rect.position.y + rect.height );
+    }
+    function createParticles(x, y, color, count) {
+        for (let i = 0; i < count; i++) particles.push(new Particle({ position: { x, y }, velocity: { x: (Math.random() - 0.5) * 15, y: (Math.random() - 0.5) * 15 }, color: color, radius: Math.random() * 4 + 2 }));
+    }
+    function determineWinner({ player, enemy, timerId }) {
+        clearTimeout(timerId); const screen = document.querySelector('#gameOverScreen'); const text = document.querySelector('#displayText'); screen.style.display = 'flex';
+        if (player.health === enemy.health) text.innerHTML = '平 局'; else if (player.health > enemy.health) { text.innerHTML = '玩家胜利!'; text.style.color = '#4287f5'; } else { text.innerHTML = '你输了...'; text.style.color = '#f44336'; }
+    }
+    function decreaseTimer() {
+        if (timer > 0) { timerId = setTimeout(decreaseTimer, 1000); timer--; document.querySelector('#timer').innerHTML = timer; }
+        if (timer === 0) determineWinner({ player, enemy, timerId });
+    }
+    function restartGame() { initGame(); }
+
+    // === 游戏循环 ===
+    function animate() {
+        window.requestAnimationFrame(animate);
+        
+        if (isPaused) return;
+        
+        // --- 镜头跟随计算 ---
+        // 让镜头保持玩家在屏幕偏中心的位置
+        const targetCameraX = player.position.x - canvas.width / 2 + player.width / 2;
+        // 平滑移动镜头
+        camera.x += (targetCameraX - camera.x) * 0.1;
+        // 限制镜头不超出大地图边界
+        camera.x = Math.max(0, Math.min(camera.x, MAP_WIDTH - canvas.width));
+
+        c.fillStyle = '#1a1a24';
+        c.fillRect(0, 0, canvas.width, canvas.height);
+        
+        c.save();
+        
+        // 应用震动和镜头平移
+        let currentDx = 0, currentDy = 0;
+        if (shakeFrames > 0) {
+            currentDx = (Math.random() - 0.5) * shakeIntensity;
+            currentDy = (Math.random() - 0.5) * shakeIntensity;
+            shakeFrames--;
+        }
+        c.translate(-camera.x + currentDx, currentDy); // 核心：平移画布实现镜头
+
+        // --- 绘制地图元素 ---
+        // 绘制平台
+        c.fillStyle = '#455a64';
+        platforms.forEach(p => {
+            c.fillRect(p.x, p.y, p.w, p.h);
+            c.fillStyle = '#607d8b'; c.fillRect(p.x, p.y, p.w, 5); // 平台顶边高光
+            c.fillStyle = '#455a64';
+        });
+
+        // 绘制地板网格 (一直画到 MAP_WIDTH)
+        c.fillStyle = '#111';
+        c.fillRect(0, FLOOR_Y, MAP_WIDTH, 50);
+        c.strokeStyle = '#333'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, FLOOR_Y); c.lineTo(MAP_WIDTH, FLOOR_Y); c.stroke();
+
+        // 绘制可破坏物
+        destructibles.forEach((obj, index) => {
+            if(obj.dead) destructibles.splice(index, 1);
+            else obj.draw();
+        });
+
+        // --- 玩家输入逻辑 ---
+        if (player.hitstun <= 0 && !player.isDashing && !player.isCrouching) {
+            player.velocity.x = 0;
+            if (keys.a.pressed && player.lastKey === 'a') { player.velocity.x = -6; player.facingRight = false; }
+            else if (keys.d.pressed && player.lastKey === 'd') { player.velocity.x = 6; player.facingRight = true; }
+        }
+        player.update();
+
+        // --- AI 逻辑 ---
+        if (enemy.hitstun <= 0 && !enemy.isDashing && !enemy.dead && !enemy.isCrouching) {
+            enemy.velocity.x = 0;
+            const distance = player.position.x - enemy.position.x;
+            enemy.facingRight = distance > 0;
+            
+            if (Math.abs(distance) > 80) enemy.velocity.x = distance > 0 ? 4 : -4; // 追逐
+            else if (Math.random() < 0.05) enemy.attack(); // 近战
+            
+            // AI 跳上平台或跨越障碍的简单逻辑
+            let enemyBlocked = destructibles.some(obj => !obj.dead && Math.abs(obj.position.x - enemy.position.x) < 80 && obj.position.y >= enemy.position.y);
+            if (enemyBlocked && enemy.position.y + enemy.height >= FLOOR_Y - 10) {
+                if(Math.random() < 0.1) enemy.attack(); // 尝试打碎箱子
+                else if(Math.random() < 0.05) enemy.velocity.y = -18; // 跳过去
+            }
+
+            if (Math.abs(distance) > 300 && Math.random() < 0.01) enemy.shoot();
+            if (Math.abs(distance) > 200 && Math.random() < 0.005) enemy.dash();
+        }
+        enemy.update();
+        
+        // --- 碰撞与特效处理 ---
+        projectiles.forEach((proj, index) => {
+            proj.update();
+            // 子弹打人
+            let target = proj.owner === player ? enemy : player;
+            if (!target.dead && circleRectCollision({ circle: proj, rect: target })) {
+                target.takeDamage(15, proj.velocity.x > 0 ? 1 : -1, true); 
+                createParticles(proj.position.x, proj.position.y, proj.color, 20);
+                proj.markedForDeletion = true;
+            }
+            // 子弹打箱子
+            destructibles.forEach(obj => {
+                if(!obj.dead && circleRectCollision({ circle: proj, rect: obj })) {
+                    obj.takeDamage(15);
+                    proj.markedForDeletion = true;
+                }
+            });
+            if (proj.markedForDeletion) projectiles.splice(index, 1);
+        });
+        
+        particles.forEach((p, index) => { if (p.alpha <= 0) particles.splice(index, 1); else p.update(); });
+        floatingTexts.forEach((ft, index) => { if (ft.alpha <= 0) floatingTexts.splice(index, 1); else ft.update(); });
+        
+        // 近战判定 (封装成函数避免重复)
+        function checkMeleeHit(attacker, defender) {
+            if (rectangularCollision({ rectangle1: attacker, rectangle2: defender }) && attacker.isAttacking && !defender.dead) {
+                attacker.isAttacking = false; 
+                defender.takeDamage(8, attacker.facingRight ? 1 : -1, false);
+                createParticles(defender.position.x + defender.width/2, defender.position.y + defender.height/2, '#fff', 10);
+            }
+            // 打箱子
+            if(attacker.isAttacking) {
+                destructibles.forEach(obj => {
+                    if(!obj.dead && rectangularCollision({ rectangle1: attacker, rectangle2: {position: obj.position, width: obj.width, height: obj.height} })) {
+                        attacker.isAttacking = false;
+                        obj.takeDamage(10);
+                    }
+                });
+            }
+        }
+        checkMeleeHit(player, enemy);
+        checkMeleeHit(enemy, player);
+
+        c.restore(); // 恢复镜头
+    }
+
+    // === 事件监听 ===
+    window.addEventListener('keydown', (event) => {
+        // 防止空格键滚动页面
+        if (event.key === ' ') {
+            event.preventDefault();
+        }
+
+        if (player.dead) return;
+        switch (event.key.toLowerCase()) {
+            case 'd': keys.d.pressed = true; player.lastKey = 'd'; break;
+            case 'a': keys.a.pressed = true; player.lastKey = 'a'; break;
+            case ' ': // 空格跳跃
+                // 在地面或平台上才能跳
+                if ((player.position.y + player.height >= FLOOR_Y || player.onPlatform) && player.hitstun <= 0) 
+                    player.velocity.y = -18;
+                break;
+            case 's':
+                player.isCrouching = true;
+                break;
+            case 'j': player.attack(); break;
+            case 'k': player.shoot(); break;
+            case 'l': player.dash(); break;
+        }
+    });
+
+    window.addEventListener('keyup', (event) => {
+        switch (event.key.toLowerCase()) {
+            case 'd': keys.d.pressed = false; break;
+            case 'a': keys.a.pressed = false; break;
+            case 's': player.isCrouching = false; break;
+        }
+    });
+
+    initGame(); animate();
+</script>
+
+<!-- 暂停菜单 -->
+<div id="pauseMenu" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 30;">
+    <div style="background: #222; border: 2px solid #555; border-radius: 10px; padding: 40px; width: 300px; text-align: center; color: white; box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);">
+        <h1>游戏暂停</h1>
+        <button onclick="resumeGame()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #4caf50; color: white; border: none; border-radius: 5px; margin: 10px;">继续游戏</button><br>
+        <button onclick="returnToGallery()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #2196f3; color: white; border: none; border-radius: 5px; margin: 10px;">返回游戏库</button><br>
+        <button onclick="toggleFullScreen()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #ff9800; color: white; border: none; border-radius: 5px; margin: 10px;">全屏模式</button>
+    </div>
+</div>
+
+<script>
+    let isPaused = false;
+
+    function stopGame() {
+        isPaused = true;
+    }
+
+    function returnToGallery() {
+        stopGame();
+        if (window.parent && window.parent !== window) { // in iframe
+            try {
+                if (typeof window.parent.backToGallery === 'function') {
+                    window.parent.backToGallery();
+                    return;
+                }
+            } catch (err) {
+                console.warn('parent.backToGallery failed:', err);
+            }
+            try {
+                window.parent.location.href = 'index.html#game';
+                return;
+            } catch (err) {
+                console.warn('parent.location.href failed:', err);
+            }
+            try {
+                window.top.location.href = 'index.html#game';
+                return;
+            } catch (err) {
+                console.warn('top.location.href failed:', err);
+            }
+        } else { // not in iframe
+            window.location.href = 'index.html#game';
+        }
+    }
+
+    function resumeGame() {
+        isPaused = false;
+        document.getElementById('pauseMenu').style.display = 'none';
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    // 添加 ESC 键监听
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            isPaused = !isPaused;
+            document.getElementById('pauseMenu').style.display = isPaused ? 'flex' : 'none';
+        }
+    });
+</script>
+</body>
+</html>

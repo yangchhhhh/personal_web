@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>潮汐车道 · 智能编队调度系统 | 高精道路版</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+    body {
+      overflow: hidden;
+      font-family: 'Inter', 'Segoe UI', 'PingFang SC', monospace;
+    }
+    /* 主控制栏 - 精致透明玻璃效果 */
+    .control-bar {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(12, 18, 28, 0.85);
+      backdrop-filter: blur(16px);
+      border-radius: 60px;
+      padding: 12px 24px;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      z-index: 30;
+      pointer-events: auto;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    .control-bar button {
+      background: #1e293b;
+      border: none;
+      color: #e2e8f0;
+      padding: 8px 18px;
+      border-radius: 40px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      letter-spacing: 0.5px;
+    }
+    .control-bar button:hover { background: #2d3b52; transform: translateY(-1px); }
+    .control-bar button:active { transform: scale(0.96); background: #0f172a; }
+    .control-bar button.active { background: #0f9b5e; color: white; box-shadow: 0 2px 8px rgba(15,155,94,0.4); }
+    .control-bar button.green-active { background: #2563eb; }
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(0,0,0,0.5);
+      padding: 4px 16px;
+      border-radius: 40px;
+      color: #cbd5e1;
+      font-size: 12px;
+    }
+    /* 右侧状态卡 */
+    .status-card {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 12px 24px;
+      border-right: 4px solid #10b981;
+      font-family: monospace;
+      z-index: 30;
+      pointer-events: none;
+    }
+    .status-card span { color: #86efac; font-weight: bold; }
+    /* 左侧信息栏 */
+    .info-panel {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      background: rgba(8, 12, 20, 0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 14px 20px;
+      border-left: 3px solid #3b82f6;
+      max-width: 320px;
+      z-index: 30;
+      pointer-events: none;
+      font-size: 12px;
+      color: #cbd5e6;
+    }
+    .info-panel h2 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #facc15;
+      letter-spacing: 1px;
+    }
+    /* 双面板：电量 + 报警 */
+    .dashboard {
+      position: absolute;
+      left: 24px;
+      bottom: 100px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 30;
+      width: 260px;
+      pointer-events: none;
+    }
+    .god-panel {
+      background: rgba(8, 12, 24, 0.88);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      border: 1px solid #2a4c6e;
+      padding: 10px 14px;
+      font-size: 11px;
+      pointer-events: auto;
+    }
+    .god-panel h4 {
+      margin: 0 0 8px 0;
+      font-size: 12px;
+      color: #facc15;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 5px;
+    }
+    .battery-list { max-height: 180px; overflow-y: auto; scrollbar-width: thin; }
+    .battery-list::-webkit-scrollbar { width: 4px; }
+    .battery-item { display: flex; justify-content: space-between; padding: 3px 0; font-family: monospace; border-bottom: 1px solid #1e2a3a; color: white; }
+    .alert-list { max-height: 110px; overflow-y: auto; color: #ffaa66; }
+    .alert-item { padding: 3px 0; font-size: 10px; border-bottom: 1px solid #332200; }
+    /* 多选面板 */
+    .selection-panel {
+      position: absolute;
+      bottom: 100px;
+      right: 24px;
+      width: 270px;
+      background: rgba(12, 16, 28, 0.96);
+      backdrop-filter: blur(16px);
+      border-radius: 20px;
+      border: 1px solid #3b82f6;
+      padding: 14px;
+      z-index: 40;
+      pointer-events: auto;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .selection-panel h4 { color: #facc15; margin: 0 0 4px; font-size: 13px; }
+    .selected-list { background: #00000055; border-radius: 12px; padding: 6px; max-height: 80px; overflow-y: auto; font-size: 11px; }
+    .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .action-buttons button { background: #2d3e6e; padding: 6px 8px; font-size: 11px; flex: 1; border-radius: 30px; cursor: pointer; transition: 0.1s; }
+    .action-buttons button:active { transform: scale(0.96); }
+    .rotate-controls { border-top: 1px solid #3a5a8a; margin-top: 6px; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+    /* 仓库编辑面板 */
+    .warehouse-editor {
+      position: absolute;
+      top: 24px;
+      left: 360px;
+      width: 280px;
+      background: rgba(8, 12, 22, 0.92);
+      backdrop-filter: blur(16px);
+      border-radius: 20px;
+      border: 1px solid #facc15;
+      padding: 12px 14px;
+      z-index: 30;
+      pointer-events: auto;
+      font-size: 12px;
+    }
+    .warehouse-editor h4 { margin: 0 0 10px; color: #facc15; font-size: 13px; }
+    .warehouse-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .warehouse-row label { width: 40px; font-weight: bold; color: #94a3b8; }
+    .warehouse-row input { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 20px; padding: 6px 8px; color: white; }
+    .warehouse-row span { width: 45px; text-align: right; font-family: monospace; }
+    .apply-btn { background: #0f9b5e; width: 100%; padding: 8px; border-radius: 40px; margin-top: 8px; font-weight: bold; cursor: pointer; transition: 0.1s; }
+    .apply-btn:active { transform: scale(0.98); }
+    /* 小地图 */
+    .overhead-map {
+      position: absolute;
+      top: 24px;
+      right: 300px;
+      width: 230px;
+      height: 230px;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      border-radius: 20px;
+      border: 1px solid #3b82f6;
+      z-index: 30;
+      pointer-events: none;
+    }
+    .overhead-map h4 { text-align: center; margin: 8px 0 0; font-size: 11px; color: #94a3b8; }
+    canvas#mapCanvas { width: 100%; height: 190px; display: block; border-radius: 12px; }
+    /* 路径规划弹窗 */
+    .path-planning-modal {
+      position: absolute;
+      top: 10%;
+      left: 10%;
+      width: 80%;
+      height: 80%;
+      background: #0a0f1a;
+      border: 2px solid #facc15;
+      border-radius: 16px;
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      backdrop-filter: blur(2px);
+      pointer-events: auto;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+    .modal-header {
+      background: #11161f;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #facc15;
+    }
+    .modal-header h3 { color: #facc15; margin: 0; }
+    .modal-header button { background: #3a3f5a; border: none; color: white; padding: 4px 12px; border-radius: 20px; cursor: pointer; }
+    .modal-canvas-container { flex: 1; margin: 16px; border: 1px solid #2a4c6e; border-radius: 8px; overflow: hidden; background: #050a12; }
+    canvas#planCanvas { width: 100%; height: 100%; display: block; background: #050a12; }
+    .modal-footer { padding: 10px 20px; display: flex; justify-content: center; gap: 20px; border-top: 1px solid #2a4c6e; }
+    .modal-footer button { background: #0f9b5e; border: none; padding: 8px 24px; border-radius: 40px; color: white; font-weight: bold; cursor: pointer; }
+    .remote-control-hint {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #000000cc;
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 12px;
+      color: #facc15;
+      font-family: monospace;
+      z-index: 200;
+      display: none;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="control-bar" id="ctrlBar">
+    <button id="btnTideDefault" class="active">⚖️ 2+2</button>
+    <button id="btnTideMorning">🌄 3+1</button>
+    <button id="btnTideEvening">🌆 1+3</button>
+    <button id="btnVertical" class="green-active">🚗 竖向通车</button>
+    <button id="btnHorizontal">🚙 横向通车</button>
+    <button id="btnDeploy">🌅 部署编队</button>
+    <button id="btnRecall">🌙 全部收回</button>
+    <button id="btnGrid">🔲 网格</button>
+    <button id="btnResetView">📷 重置视角</button>
+    <button id="btnPathPlanning">✏️ 路径规划</button>
+    <div class="slider-container"><span>🏃 速度</span><input type="range" id="speedSlider" min="0.8" max="5.0" step="0.1" value="2.8"></div>
+  </div>
+
+  <div class="status-card">⚙️ 系统状态: <span id="sysStatus">待命</span></div>
+  <div class="info-panel"><h2>🚦 潮汐车道 · 高精道路</h2><p>🔋 移动耗电 · 低电报警 · 手动替补 · 中心旋转</p><p>📌 <span id="modeLabel">默认2+2</span> | <span id="dirLabel">竖向通车</span></p></div>
+
+  <div class="dashboard">
+    <div class="god-panel"><h4>🔋 电量监控</h4><div id="batteryList" class="battery-list"></div></div>
+    <div class="god-panel"><h4>⚠️ 低电报警 (≤20%)</h4><div id="alertList" class="alert-list"></div></div>
+  </div>
+
+  <div class="selection-panel" id="selectionPanel">
+    <h4>📌 选中机器人 (<span id="selCount">0</span>)</h4>
+    <div id="selList" class="selected-list"></div>
+    <div class="action-buttons">
+      <button id="btnCharge">🔋 回仓充电</button>
+      <button id="btnDrain">⚡ 电量归零</button>
+      <button id="btnSetCenter">🎯 选定为中心</button>
+      <button id="btnSubstitute">🔄 替补上场</button>
+      <button id="btnRemoteControl">🎮 遥控模式</button>
+    </div>
+    <div class="rotate-controls"><div style="display:flex; gap:8px;"><button id="btnRotCCW">↺ 逆时针</button><button id="btnRotCW">↻ 顺时针</button></div><div style="display:flex; align-items:center; gap:8px;"><span>角度:</span><input type="range" id="rotAngle" min="5" max="90" step="5" value="30"><span id="angleVal">30°</span><button id="btnExecRot">执行</button></div><div style="font-size:10px;">⚙️ 需先选定中心机器人</div></div>
+  </div>
+
+  <div class="warehouse-editor" id="warehouseEditor">
+    <h4>🏚️ 仓库编队编辑 (NW / SE)</h4>
+    <div class="warehouse-row"><label>NW X:</label><input type="range" id="nwX" min="-100" max="-20" step="1" value="-61"><span id="nwXVal">-61</span></div>
+    <div class="warehouse-row"><label>NW Z:</label><input type="range" id="nwZ" min="10" max="70" step="1" value="20"><span id="nwZVal">20</span></div>
+    <div class="warehouse-row"><label>SE X:</label><input type="range" id="seX" min="20" max="100" step="1" value="20"><span id="seXVal">20</span></div>
+    <div class="warehouse-row"><label>SE Z:</label><input type="range" id="seZ" min="-70" max="-10" step="1" value="-27"><span id="seZVal">-27</span></div>
+    <button id="applyWarehouse" class="apply-btn">📌 应用新仓库位 + 预览</button>
+  </div>
+
+  <div class="overhead-map"><h4>🗺️ 战术俯瞰</h4><canvas id="mapCanvas" width="230" height="190"></canvas></div>
+
+  <div id="pathModal" class="path-planning-modal">
+    <div class="modal-header"><h3>✏️ 路径规划 & 编队自适应</h3><button id="closeModalBtn">✖ 关闭</button></div>
+    <div class="modal-canvas-container"><canvas id="planCanvas" width="800" height="600"></canvas></div>
+    <div class="modal-footer"><button id="startMoveBtn">🚀 开始运动</button><button id="cancelPathBtn">🗑️ 清除路径</button></div>
+  </div>
+
+  <div id="remoteHint" class="remote-control-hint">🎮 遥控模式: ↑ ↓ ← → 空格停止</div>
+
+  <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+    // ---------- 常量 ----------
+    const ROBOT_COUNT = 20;
+    const LANE_WIDTH = 3.75, ROAD_LENGTH = 55, CROSS_SIZE = 16;
+    const ROAD_HALF = LANE_WIDTH * 2, DIVIDER_W = 0.6, CROSS_HALF = CROSS_SIZE/2;
+    const ROAD_BOUNDS = { x_min: -ROAD_HALF-0.5, x_max: ROAD_HALF+0.5, z_min: -ROAD_LENGTH, z_max: ROAD_LENGTH };
+    function isWithinRoad(x,z) { return (x>=ROAD_BOUNDS.x_min && x<=ROAD_BOUNDS.x_max && z>=ROAD_BOUNDS.z_min && z<=ROAD_BOUNDS.z_max) || (z>=ROAD_BOUNDS.x_min && z<=ROAD_BOUNDS.x_max && x>=ROAD_BOUNDS.z_min && x<=ROAD_BOUNDS.z_max); }
+    
+    const ACTIVE_NW = [0,1,2,3,4,5,6], ACTIVE_SE = [10,11,12,13,14,15,16];
+    const ACTIVE_IDS = new Set([...ACTIVE_NW, ...ACTIVE_SE]);
+    const RESERVE_NW = [7,8,9], RESERVE_SE = [17,18,19];
+    
+    let nwBaseX = -61, nwBaseZ = 20, seBaseX = 20, seBaseZ = -27;
+    const GRID_COLS = 5, GRID_ROWS = 2, SPACING = 11;
+    function getHomePos(id) {
+      const isNW = id < 10;
+      let col = id % GRID_COLS, row = Math.floor(id / GRID_COLS) % GRID_ROWS;
+      if(isNW) return new THREE.Vector3(nwBaseX + col*SPACING, 0, nwBaseZ + row*SPACING);
+      else { const idx=id-10; col=idx%GRID_COLS; row=Math.floor(idx/GRID_COLS)%GRID_ROWS; return new THREE.Vector3(seBaseX + col*SPACING, 0, seBaseZ + row*SPACING); }
+    }
+    
+    let currentMode='default', currentDir='vertical', previousDir='vertical', isDeployed=false, transition=false;
+    let pendingReplacePos=null, pendingReplaceSide=null;
+    let disableBoundaryCounter = 0;
+    
+    // 场景
+    const scene = new THREE.Scene(); scene.background=new THREE.Color(0x0b1018); scene.fog=new THREE.FogExp2(0x0b1018,0.006);
+    const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight,0.5,300); camera.position.set(0,26,44);
+    const renderer = new THREE.WebGLRenderer({antialias:true}); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true; document.body.appendChild(renderer.domElement);
+    const labelRenderer = new CSS2DRenderer(); labelRenderer.setSize(innerWidth,innerHeight); labelRenderer.domElement.style.position='absolute'; labelRenderer.domElement.style.top='0'; labelRenderer.domElement.style.left='0'; labelRenderer.domElement.style.pointerEvents='none'; document.body.appendChild(labelRenderer.domElement);
+    const controls = new OrbitControls(camera,renderer.domElement); controls.target.set(0,0,0); controls.enableDamping=true; controls.dampingFactor=0.07; controls.maxDistance=90;
+    
+    // 光照
+    scene.add(new THREE.AmbientLight(0x3a3f5a,0.55));
+    const mainLight = new THREE.DirectionalLight(0xfff5e0,2.2); mainLight.position.set(25,45,20); mainLight.castShadow=true; scene.add(mainLight);
+    scene.add(new THREE.PointLight(0x6688aa,0.7)).position.set(-15,20,-15); scene.add(new THREE.PointLight(0xffaa66,0.5)).position.set(0,12,-25);
+    
+    // ---------- 增强版地面道路 ----------
+    // 基础沥青材质 (带轻微粗糙度)
+    const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x2a2a38, roughness: 0.65, metalness: 0.05 });
+    // 主路面
+    const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF*2+DIVIDER_W, ROAD_LENGTH*2), asphaltMat);
+    roadNS.rotation.x = -Math.PI/2; roadNS.position.y = 0.005; roadNS.receiveShadow = true; scene.add(roadNS);
+    const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_LENGTH*2, ROAD_HALF*2+DIVIDER_W), asphaltMat);
+    roadEW.rotation.x = -Math.PI/2; roadEW.position.y = 0.005; roadEW.receiveShadow = true; scene.add(roadEW);
+    const crossPlane = new THREE.Mesh(new THREE.PlaneGeometry(CROSS_SIZE, CROSS_SIZE), asphaltMat);
+    crossPlane.rotation.x = -Math.PI/2; crossPlane.position.y = 0.006; scene.add(crossPlane);
+    
+    // 道路边缘路缘石 (简单示意)
+    const curbMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4 });
+    const curbHeight = 0.08;
+    const curbWidth = 0.2;
+    const roadEdgeL = -ROAD_HALF-0.25;
+    const roadEdgeR = ROAD_HALF+0.25;
+    for (let z = -ROAD_LENGTH; z <= ROAD_LENGTH; z += 2) {
+      const leftCurb = new THREE.Mesh(new THREE.BoxGeometry(curbWidth, curbHeight, 0.8), curbMat);
+      leftCurb.position.set(roadEdgeL, curbHeight/2, z); leftCurb.castShadow = true; scene.add(leftCurb);
+      const rightCurb = new THREE.Mesh(new THREE.BoxGeometry(curbWidth, curbHeight, 0.8), curbMat);
+      rightCurb.position.set(roadEdgeR, curbHeight/2, z); rightCurb.castShadow = true; scene.add(rightCurb);
+    }
+    for (let x = -ROAD_LENGTH; x <= ROAD_LENGTH; x += 2) {
+      const topCurb = new THREE.Mesh(new THREE.BoxGeometry(0.8, curbHeight, curbWidth), curbMat);
+      topCurb.position.set(x, curbHeight/2, -ROAD_HALF-0.25); topCurb.castShadow = true; scene.add(topCurb);
+      const bottomCurb = new THREE.Mesh(new THREE.BoxGeometry(0.8, curbHeight, curbWidth), curbMat);
+      bottomCurb.position.set(x, curbHeight/2, ROAD_HALF+0.25); bottomCurb.castShadow = true; scene.add(bottomCurb);
+    }
+    
+    // 车道线函数
+    function addLine(p1, p2, color, width=0.08, yOffset=0.045) {
+      const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+      const length = p1.distanceTo(p2);
+      const box = new THREE.Mesh(new THREE.BoxGeometry(width, 0.02, length), new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.2 }));
+      const center = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+      box.position.copy(center); box.position.y = yOffset;
+      box.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), dir);
+      scene.add(box);
+    }
+    // 双黄线 (中央隔离)
+    addLine(new THREE.Vector3(-DIVIDER_W/2,0, -ROAD_LENGTH), new THREE.Vector3(-DIVIDER_W/2,0, ROAD_LENGTH), 0xffaa33, 0.12);
+    addLine(new THREE.Vector3(DIVIDER_W/2,0, -ROAD_LENGTH), new THREE.Vector3(DIVIDER_W/2,0, ROAD_LENGTH), 0xffaa33, 0.12);
+    addLine(new THREE.Vector3(-ROAD_LENGTH,0, -DIVIDER_W/2), new THREE.Vector3(ROAD_LENGTH,0, -DIVIDER_W/2), 0xffaa33, 0.12);
+    addLine(new THREE.Vector3(-ROAD_LENGTH,0, DIVIDER_W/2), new THREE.Vector3(ROAD_LENGTH,0, DIVIDER_W/2), 0xffaa33, 0.12);
+    
+    // 车道分界线 (白色虚线) - 南北向
+    const dashLen = 2.0, dashGap = 3.0;
+    for (let z = -ROAD_LENGTH+1; z <= ROAD_LENGTH-1; z += dashLen+dashGap) {
+      if (Math.abs(z) < CROSS_HALF+0.5) continue;
+      // 左侧车道线 (x = -LANE_WIDTH)
+      addLine(new THREE.Vector3(-LANE_WIDTH,0,z), new THREE.Vector3(-LANE_WIDTH,0,z+dashLen), 0xffffff, 0.1);
+      // 右侧车道线 (x = LANE_WIDTH)
+      addLine(new THREE.Vector3(LANE_WIDTH,0,z), new THREE.Vector3(LANE_WIDTH,0,z+dashLen), 0xffffff, 0.1);
+    }
+    // 东西向
+    for (let x = -ROAD_LENGTH+1; x <= ROAD_LENGTH-1; x += dashLen+dashGap) {
+      if (Math.abs(x) < CROSS_HALF+0.5) continue;
+      addLine(new THREE.Vector3(x,0,-LANE_WIDTH), new THREE.Vector3(x+dashLen,0,-LANE_WIDTH), 0xffffff, 0.1);
+      addLine(new THREE.Vector3(x,0,LANE_WIDTH), new THREE.Vector3(x+dashLen,0,LANE_WIDTH), 0xffffff, 0.1);
+    }
+    
+    // 路口导向箭头 (简单三角形组合)
+    const arrowMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const addArrow = (x, z, rotationY) => {
+      const group = new THREE.Group();
+      const rect = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.04, 1.2), arrowMat);
+      rect.position.y = 0.045;
+      group.add(rect);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.8, 8), arrowMat);
+      cone.position.set(0, 0.045, 0.7);
+      group.add(cone);
+      group.position.set(x, 0, z);
+      group.rotation.y = rotationY;
+      scene.add(group);
+    };
+    // 南北向箭头 (在停止线前)
+    const stopZ = CROSS_HALF + 1.2;
+    addArrow(-LANE_WIDTH, -stopZ, 0); addArrow(LANE_WIDTH, -stopZ, 0);
+    addArrow(-LANE_WIDTH, stopZ, Math.PI); addArrow(LANE_WIDTH, stopZ, Math.PI);
+    // 东西向箭头
+    const stopX = CROSS_HALF + 1.2;
+    addArrow(-stopX, -LANE_WIDTH, Math.PI/2); addArrow(-stopX, LANE_WIDTH, Math.PI/2);
+    addArrow(stopX, -LANE_WIDTH, -Math.PI/2); addArrow(stopX, LANE_WIDTH, -Math.PI/2);
+    
+    // 人行横道线 (斑马线)
+    const zebraMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const zebraWidth = 0.4, zebraLen = 4.0;
+    for (let side = -1; side <= 1; side+=2) {
+      const zPos = side * (CROSS_HALF + 0.8);
+      for (let i = -3; i <= 3; i++) {
+        const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.03, zebraLen), zebraMat);
+        stripe.position.set(i * 0.7, 0.045, zPos);
+        stripe.castShadow = false;
+        scene.add(stripe);
+      }
+      const xPos = side * (CROSS_HALF + 0.8);
+      for (let i = -3; i <= 3; i++) {
+        const stripe = new THREE.Mesh(new THREE.BoxGeometry(zebraLen, 0.03, 0.35), zebraMat);
+        stripe.position.set(xPos, 0.045, i * 0.7);
+        stripe.castShadow = false;
+        scene.add(stripe);
+      }
+    }
+    
+    // 停止线 (白色实线)
+    const stopLineMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const addStopLine = (x1, z1, x2, z2) => {
+      const len = Math.hypot(x2-x1, z2-z1);
+      const dir = new THREE.Vector3(x2-x1, 0, z2-z1).normalize();
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, len), stopLineMat);
+      const center = new THREE.Vector3((x1+x2)/2, 0.045, (z1+z2)/2);
+      box.position.copy(center);
+      box.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), dir);
+      scene.add(box);
+    };
+    addStopLine(-ROAD_HALF, -CROSS_HALF-0.5, ROAD_HALF, -CROSS_HALF-0.5);
+    addStopLine(-ROAD_HALF, CROSS_HALF+0.5, ROAD_HALF, CROSS_HALF+0.5);
+    addStopLine(-CROSS_HALF-0.5, -ROAD_HALF, -CROSS_HALF-0.5, ROAD_HALF);
+    addStopLine(CROSS_HALF+0.5, -ROAD_HALF, CROSS_HALF+0.5, ROAD_HALF);
+    
+    // 辅助网格线 (可选)
+    const gridHelper = new THREE.GridHelper(140, 60, 0x88aaff, 0x446688);
+    gridHelper.position.y = 0.01; gridHelper.material.transparent = true; gridHelper.material.opacity = 0.2;
+    scene.add(gridHelper);
+    let gridVisible = true;
+    const dividerGroup = new THREE.Group();
+    scene.add(dividerGroup);
+    function updateDivider() {
+      while(dividerGroup.children.length) dividerGroup.remove(dividerGroup.children[0]);
+      if(!isDeployed) return;
+      const col = 0xffcc44;
+      if(currentDir==='vertical') {
+        const dx = currentMode==='morning' ? -LANE_WIDTH : (currentMode==='evening' ? LANE_WIDTH : 0);
+        const add = (p1,p2) => dividerGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([p1,p2]), new THREE.LineBasicMaterial({color:col})));
+        add(new THREE.Vector3(dx,0.045,-ROAD_LENGTH), new THREE.Vector3(dx,0.045,-CROSS_HALF));
+        add(new THREE.Vector3(dx,0.045,CROSS_HALF), new THREE.Vector3(dx,0.045,ROAD_LENGTH));
+      } else {
+        const dz = currentMode==='morning' ? -LANE_WIDTH : (currentMode==='evening' ? LANE_WIDTH : 0);
+        add(new THREE.Vector3(-ROAD_LENGTH,0.045,dz), new THREE.Vector3(-CROSS_HALF,0.045,dz));
+        add(new THREE.Vector3(CROSS_HALF,0.045,dz), new THREE.Vector3(ROAD_LENGTH,0.045,dz));
+      }
+    }
+    
+    // 机器人模型 (保持不变)
+    class Robot {
+      constructor(id,homePos){
+        this.id=id; this.homePos=homePos.clone(); this.group=new THREE.Group(); this.group.position.copy(homePos);
+        this.battery=100; this.selected=false; this.isCenter=false; this.isActive=ACTIVE_IDS.has(id); this.isReserve=!this.isActive;
+        const base=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.1,0.62), new THREE.MeshStandardMaterial({color:0x3a3a4a,metalness:0.6})); base.position.y=0.05; base.castShadow=true; this.group.add(base);
+        const cone=new THREE.Mesh(new THREE.ConeGeometry(0.38,0.95,12), new THREE.MeshStandardMaterial({color:0xff6600,emissive:0x331100})); cone.position.y=0.55; this.group.add(cone);
+        const stripe=new THREE.Mesh(new THREE.TorusGeometry(0.4,0.06,8,24), new THREE.MeshStandardMaterial({color:0xffffff})); stripe.position.y=0.72; stripe.rotation.x=Math.PI/2; this.group.add(stripe);
+        const stripe2=stripe.clone(); stripe2.position.y=0.42; this.group.add(stripe2);
+        const topMat=new THREE.MeshStandardMaterial({color:0xff3333,emissive:0xff2222}); const top=new THREE.Mesh(new THREE.SphereGeometry(0.09,16,16),topMat); top.position.y=1.02; top.name='feature'; this.group.add(top);
+        const ringGeo=new THREE.TorusGeometry(0.55,0.05,16,32); const ringMat=new THREE.MeshStandardMaterial({color:0x3b82f6,emissive:0x3b82f6}); this.selectionRing=new THREE.Mesh(ringGeo,ringMat); this.selectionRing.rotation.x=Math.PI/2; this.selectionRing.position.y=0.1; this.selectionRing.visible=false; this.group.add(this.selectionRing);
+        const centerMark=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,8), new THREE.MeshStandardMaterial({color:0xffaa44,emissive:0x442200})); centerMark.position.y=1.2; centerMark.visible=false; this.group.add(centerMark); this.centerMark=centerMark;
+        this.idLabel=new CSS2DObject(Object.assign(document.createElement('div'),{style:{color:'#ffcc77',background:'rgba(0,0,0,0.65)',padding:'2px 8px',borderRadius:'20px',fontSize:'10px',border:'1px solid #ffaa44'}})); this.idLabel.position.set(0,1.38,0); this.group.add(this.idLabel);
+        this.path=[]; this.pathIdx=0; this.speed=2.8; this.updateUI();
+      }
+      updateUI(){ this.idLabel.element.textContent=`${this.id}${this.id<10?'⛰️':'🏞️'}${this.isActive?'':'💤'}`; }
+      setSelected(sel){ this.selected=sel; this.selectionRing.visible=sel; }
+      setCenter(center){ this.isCenter=center; this.centerMark.visible=center; }
+      setPath(p){ this.path=p; this.pathIdx=0; }
+      setTarget(x,z){ this.setPath([new THREE.Vector3(x,0,z)]); }
+      update(delta,time){
+        let moved=0;
+        if(this.path.length){
+          const targ=this.path[this.pathIdx], pos=this.group.position;
+          const dx=targ.x-pos.x, dz=targ.z-pos.z, dist=Math.hypot(dx,dz);
+          if(dist<0.08){ pos.copy(targ); this.pathIdx++; if(this.pathIdx>=this.path.length) this.path=[]; }
+          else{
+            const step=Math.min(this.speed*delta,dist);
+            let nx=pos.x+(dx/dist)*step, nz=pos.z+(dz/dist)*step;
+            const onRoad=isWithinRoad(pos.x,pos.z);
+            if(disableBoundaryCounter===0 && isDeployed && this.isActive && onRoad && !isWithinRoad(nx,nz)){ nx=pos.x; nz=pos.z; }
+            const stepReal=Math.hypot(nx-pos.x, nz-pos.z);
+            pos.x=nx; pos.z=nz; moved=stepReal;
+          }
+          if(this.path.length && this.pathIdx<this.path.length){
+            const next=this.path[this.pathIdx];
+            const angle=Math.atan2(next.x-pos.x, next.z-pos.z);
+            let diff=angle-this.group.rotation.y; while(diff>Math.PI) diff-=2*Math.PI; while(diff<-Math.PI) diff+=2*Math.PI;
+            this.group.rotation.y+=Math.sign(diff)*Math.min(4*delta,Math.abs(diff));
+          }
+        }
+        if(moved>0 && this.isActive) this.battery=Math.max(0, this.battery - moved*0.018);
+        if(this.group.position.distanceTo(this.homePos) < 0.55 && this.battery < 99.9) { this.battery = 100; this.updateUI(); }
+        const feat=this.group.getObjectByName('feature'); if(feat?.material) feat.material.emissiveIntensity=0.5+Math.sin(time*12+this.id)*1.0;
+        this.updateUI();
+      }
+      chargeToHome(){
+        if(!this.isActive){ this.setTarget(this.homePos.x,this.homePos.z); return; }
+        pendingReplacePos=this.group.position.clone(); pendingReplaceSide=this.id<10?'nw':'se';
+        this.setTarget(this.homePos.x,this.homePos.z); this.isActive=false; this.isReserve=true; this.updateUI();
+      }
+      drainBattery(){ this.battery=0; this.updateUI(); }
+    }
+    
+    let robots=[];
+    function rebuildRobots(){ robots.forEach(r=>scene.remove(r.group)); robots=[]; for(let i=0;i<ROBOT_COUNT;i++){ const h=getHomePos(i); const r=new Robot(i,h); robots.push(r); scene.add(r.group); } }
+    rebuildRobots();
+    function getActive(){ return robots.filter(r=>r.isActive); }
+    function formationPoints(){
+      const active=getActive(), cnt=active.length; if(cnt===0) return [];
+      const pts=[];
+      if(currentDir==='vertical'){
+        const dx=currentMode==='morning'?-LANE_WIDTH:(currentMode==='evening'?LANE_WIDTH:0);
+        const half=Math.floor(cnt/2);
+        for(let i=0;i<half;i++){ const t=half===1?0.5:i/(half-1); pts.push({x:dx, z:-ROAD_LENGTH+2.5+t*(-CROSS_HALF+ROAD_LENGTH-5)}); }
+        for(let i=0;i<cnt-half;i++){ const t=cnt-half===1?0.5:i/(cnt-half-1); pts.push({x:dx, z:CROSS_HALF+2.5+t*(ROAD_LENGTH-CROSS_HALF-5)}); }
+      } else {
+        const dz=currentMode==='morning'?-LANE_WIDTH:(currentMode==='evening'?LANE_WIDTH:0);
+        const half=Math.floor(cnt/2);
+        for(let i=0;i<half;i++){ const t=half===1?0.5:i/(half-1); pts.push({x:-ROAD_LENGTH+2.5+t*(-CROSS_HALF+ROAD_LENGTH-5), z:dz}); }
+        for(let i=0;i<cnt-half;i++){ const t=cnt-half===1?0.5:i/(cnt-half-1); pts.push({x:CROSS_HALF+2.5+t*(ROAD_LENGTH-CROSS_HALF-5), z:dz}); }
+      }
+      return pts;
+    }
+    function deploy(){
+      if(transition) return;
+      disableBoundaryCounter++;
+      const active=getActive(), pts=formationPoints();
+      if(active.length!==pts.length){ disableBoundaryCounter--; return; }
+      active.forEach((r,i)=>r.setTarget(pts[i].x, pts[i].z));
+      isDeployed=true; previousDir=currentDir; updateDivider();
+      document.getElementById('dirLabel').innerText=currentDir==='vertical'?'竖向通车':'横向通车';
+      document.getElementById('sysStatus').innerText='部署中';
+    }
+    function recallAll(){
+      disableBoundaryCounter++;
+      getActive().forEach(r=>r.setTarget(r.homePos.x, r.homePos.z));
+      robots.forEach(r=>{ if(!r.isActive) r.setTarget(r.homePos.x, r.homePos.z); });
+      isDeployed=false; while(dividerGroup.children.length) dividerGroup.remove(dividerGroup.children[0]);
+      document.getElementById('sysStatus').innerText='全部收回';
+    }
+    function substitute(){
+      if(!pendingReplacePos){ alert("请先对活跃机器人执行「回仓充电」"); return; }
+      const pool=pendingReplaceSide==='nw'?RESERVE_NW:RESERVE_SE;
+      let cand=null; for(let rid of pool){ const b=robots[rid]; if(!b.isActive && b.group.position.distanceTo(b.homePos)<1){ cand=b; break; } }
+      if(!cand){ alert(`没有可用替补 (${pendingReplaceSide}侧)`); return; }
+      cand.isActive=true; cand.isReserve=false; cand.battery=100; cand.setTarget(pendingReplacePos.x, pendingReplacePos.z); cand.updateUI();
+      pendingReplacePos=null; pendingReplaceSide=null; document.getElementById('sysStatus').innerText='替补已上场';
+    }
+    
+    // 交互UI (保持不变)
+    let selectedSet=new Set(), centerRobot=null;
+    const raycaster=new THREE.Raycaster(), mouse=new THREE.Vector2();
+    function updateSelPanel(){
+      const pnl=document.getElementById('selectionPanel');
+      if(selectedSet.size===0){ pnl.style.display='none'; return; }
+      pnl.style.display='flex';
+      document.getElementById('selCount').innerText=selectedSet.size;
+      document.getElementById('selList').innerHTML=Array.from(selectedSet).map(r=>`🤖 ${r.id} (🔋${Math.floor(r.battery)}%)`).join('<br>');
+    }
+    function updateHighlights(){ robots.forEach(r=>r.setSelected(selectedSet.has(r))); if(centerRobot) centerRobot.setCenter(true); else robots.forEach(r=>r.setCenter(false)); }
+    window.addEventListener('click',(e)=>{
+      if(e.target.closest('#selectionPanel')||e.target.closest('#ctrlBar')||e.target.closest('#warehouseEditor')) return;
+      mouse.x=(e.clientX/renderer.domElement.clientWidth)*2-1; mouse.y=-(e.clientY/renderer.domElement.clientHeight)*2+1;
+      raycaster.setFromCamera(mouse,camera);
+      const hits=raycaster.intersectObjects(robots.map(r=>r.group),true);
+      if(hits.length===0){ if(!e.ctrlKey){ selectedSet.clear(); centerRobot=null; updateHighlights(); updateSelPanel(); } return; }
+      const clicked=robots.find(r=>r.group===hits[0].object.parent);
+      if(!clicked) return;
+      if(e.ctrlKey){ if(selectedSet.has(clicked)) selectedSet.delete(clicked); else selectedSet.add(clicked); }
+      else{ selectedSet.clear(); selectedSet.add(clicked); }
+      updateHighlights(); updateSelPanel();
+    });
+    document.getElementById('btnCharge').onclick=()=>{ selectedSet.forEach(r=>r.chargeToHome()); selectedSet.clear(); updateHighlights(); updateSelPanel(); };
+    document.getElementById('btnDrain').onclick=()=>{ selectedSet.forEach(r=>r.drainBattery()); };
+    document.getElementById('btnSetCenter').onclick=()=>{ if(selectedSet.size!==1) alert('请仅选中一个'); else{ centerRobot=Array.from(selectedSet)[0]; updateHighlights(); } };
+    document.getElementById('btnSubstitute').onclick=substitute;
+    const rotSlider=document.getElementById('rotAngle'), angleSpan=document.getElementById('angleVal'); rotSlider.oninput=()=>angleSpan.innerText=rotSlider.value+'°';
+    let rotDir=1; document.getElementById('btnRotCCW').onclick=()=>rotDir=1; document.getElementById('btnRotCW').onclick=()=>rotDir=-1;
+    document.getElementById('btnExecRot').onclick=()=>{
+      if(!centerRobot){ alert('请先选定中心'); return; }
+      const others=Array.from(selectedSet).filter(r=>r!==centerRobot && r.isActive);
+      if(others.length===0){ alert('请选中其他机器人'); return; }
+      const rad=parseFloat(rotSlider.value)*rotDir*Math.PI/180, cp=centerRobot.group.position.clone();
+      others.forEach(r=>{ const pos=r.group.position.clone(); const dx=pos.x-cp.x, dz=pos.z-cp.z; const nx=cp.x+dx*Math.cos(rad)-dz*Math.sin(rad); const nz=cp.z+dx*Math.sin(rad)+dz*Math.cos(rad); r.setTarget(nx,nz); });
+    };
+    
+    // 控制栏按钮
+    const tideBtns = [document.getElementById('btnTideDefault'), document.getElementById('btnTideMorning'), document.getElementById('btnTideEvening')];
+    const dirBtns = [document.getElementById('btnVertical'), document.getElementById('btnHorizontal')];
+    document.getElementById('btnTideDefault').onclick=()=>{ currentMode='default'; if(isDeployed) deploy(); document.getElementById('modeLabel').innerText='默认2+2'; tideBtns.forEach(b=>b.classList.remove('active')); document.getElementById('btnTideDefault').classList.add('active'); };
+    document.getElementById('btnTideMorning').onclick=()=>{ currentMode='morning'; if(isDeployed) deploy(); document.getElementById('modeLabel').innerText='早高峰3+1'; tideBtns.forEach(b=>b.classList.remove('active')); document.getElementById('btnTideMorning').classList.add('active'); };
+    document.getElementById('btnTideEvening').onclick=()=>{ currentMode='evening'; if(isDeployed) deploy(); document.getElementById('modeLabel').innerText='晚高峰1+3'; tideBtns.forEach(b=>b.classList.remove('active')); document.getElementById('btnTideEvening').classList.add('active'); };
+    document.getElementById('btnVertical').onclick=()=>{ if(currentDir!=='vertical'){ currentDir='vertical'; if(isDeployed) deploy(); } dirBtns.forEach(b=>b.classList.remove('green-active')); document.getElementById('btnVertical').classList.add('green-active'); document.getElementById('dirLabel').innerText='竖向通车'; };
+    document.getElementById('btnHorizontal').onclick=()=>{ if(currentDir!=='horizontal'){ currentDir='horizontal'; if(isDeployed) deploy(); } dirBtns.forEach(b=>b.classList.remove('green-active')); document.getElementById('btnHorizontal').classList.add('green-active'); document.getElementById('dirLabel').innerText='横向通车'; };
+    document.getElementById('btnDeploy').onclick=deploy;
+    document.getElementById('btnRecall').onclick=recallAll;
+    document.getElementById('btnGrid').onclick=()=>{ gridVisible=!gridVisible; gridHelper.visible=gridVisible; };
+    document.getElementById('btnResetView').onclick=()=>{ camera.position.set(0,26,44); controls.target.set(0,0,0); };
+    document.getElementById('speedSlider').oninput=e=>robots.forEach(r=>r.speed=+e.target.value);
+    
+    // 仓库预览
+    const nwXsl=document.getElementById('nwX'), nwZsl=document.getElementById('nwZ'), seXsl=document.getElementById('seX'), seZsl=document.getElementById('seZ');
+    const nwXv=document.getElementById('nwXVal'), nwZv=document.getElementById('nwZVal'), seXv=document.getElementById('seXVal'), seZv=document.getElementById('seZVal');
+    let previewGroup=null;
+    function showPreview(){
+      if(previewGroup) scene.remove(previewGroup);
+      previewGroup=new THREE.Group();
+      const nx=parseInt(nwXsl.value), nz=parseInt(nwZsl.value), sx=parseInt(seXsl.value), sz=parseInt(seZsl.value);
+      const addRect=(cx,cz,cols,rows,spacing)=>{
+        const w=cols*spacing, h=rows*spacing;
+        const edges=new THREE.EdgesGeometry(new THREE.BoxGeometry(w,0.05,h));
+        const mat=new THREE.LineBasicMaterial({color:0xfacc15});
+        const wire=new THREE.LineSegments(edges,mat); wire.position.set(cx+(cols-1)*spacing/2,0.15,cz+(rows-1)*spacing/2);
+        previewGroup.add(wire);
+        const rectPlane=new THREE.Mesh(new THREE.PlaneGeometry(w,h), new THREE.MeshBasicMaterial({color:0xfacc15, transparent:true, opacity:0.12, side:THREE.DoubleSide}));
+        rectPlane.rotation.x=-Math.PI/2; rectPlane.position.set(cx+(cols-1)*spacing/2,0.12,cz+(rows-1)*spacing/2);
+        previewGroup.add(rectPlane);
+      };
+      addRect(nx, nz, GRID_COLS, GRID_ROWS, SPACING);
+      addRect(sx, sz, GRID_COLS, GRID_ROWS, SPACING);
+      scene.add(previewGroup);
+    }
+    nwXsl.oninput=()=>{ nwXv.innerText=nwXsl.value; showPreview(); };
+    nwZsl.oninput=()=>{ nwZv.innerText=nwZsl.value; showPreview(); };
+    seXsl.oninput=()=>{ seXv.innerText=seXsl.value; showPreview(); };
+    seZsl.oninput=()=>{ seZv.innerText=seZsl.value; showPreview(); };
+    document.getElementById('applyWarehouse').onclick=()=>{
+      nwBaseX=parseInt(nwXsl.value); nwBaseZ=parseInt(nwZsl.value); seBaseX=parseInt(seXsl.value); seBaseZ=parseInt(seZsl.value);
+      robots.forEach(r=>{ r.homePos=getHomePos(r.id); r.setTarget(r.homePos.x, r.homePos.z); if(!r.isActive) r.battery=100; });
+      isDeployed=false; while(dividerGroup.children.length) dividerGroup.remove(dividerGroup.children[0]);
+      if(previewGroup) scene.remove(previewGroup);
+      previewGroup=null;
+      document.getElementById('sysStatus').innerText='仓库已更新';
+    };
+    showPreview();
+    
+    // 电量与报警UI
+    function updateBatteryUI(){
+      const cont=document.getElementById('batteryList'); cont.innerHTML='';
+      robots.sort((a,b)=>a.id-b.id).forEach(r=>{
+        const pct=Math.floor(r.battery); let col='#aaffaa'; if(pct<30) col='#ffaa66'; if(pct<10) col='#ff6666';
+        cont.innerHTML+=`<div class="battery-item"><span>🤖 ${r.id} (${r.isActive?'🟢':'💤'})</span><span style="color:${col}">${pct}%</span></div>`;
+      });
+      const alerts=document.getElementById('alertList');
+      const low=getActive().filter(r=>r.battery<=20);
+      alerts.innerHTML='';
+      if(low.length===0) alerts.innerHTML='<div style="color:#88aa88;">✅ 电量正常</div>';
+      else low.forEach(r=>{ alerts.innerHTML+=`<div class="alert-item">⚠️ 机器人 ${r.id} 电量 ${Math.floor(r.battery)}% (≤20%)</div>`; });
+    }
+    
+    // 小地图
+    const mapCanvas=document.getElementById('mapCanvas'), mapCtx=mapCanvas.getContext('2d');
+    function drawMap(){
+      const w=mapCanvas.width, h=mapCanvas.height;
+      mapCtx.fillStyle='#0a121c'; mapCtx.fillRect(0,0,w,h);
+      mapCtx.strokeStyle='#2a6c8e'; mapCtx.lineWidth=0.8;
+      for(let i=0;i<=w;i+=30){ mapCtx.beginPath(); mapCtx.moveTo(i,0); mapCtx.lineTo(i,h); mapCtx.stroke(); }
+      for(let i=0;i<=h;i+=30){ mapCtx.beginPath(); mapCtx.moveTo(0,i); mapCtx.lineTo(w,i); mapCtx.stroke(); }
+      mapCtx.fillStyle='#facc15'; mapCtx.beginPath(); mapCtx.arc(w/2,h/2,4,0,Math.PI*2); mapCtx.fill();
+      robots.forEach(r=>{
+        const px=(r.group.position.x+85)/170*w, py=(r.group.position.z+85)/170*h;
+        mapCtx.fillStyle=r.id<10?'#f97316':'#3b82f6';
+        mapCtx.beginPath(); mapCtx.arc(px,py,3.2,0,Math.PI*2); mapCtx.fill();
+        mapCtx.fillStyle='#fff'; mapCtx.font='bold 7px monospace'; mapCtx.fillText(r.id, px-2, py-2);
+      });
+    }
+    
+    // 遥控模式 (略，完整保留)
+    let remoteActiveRobot=null, remoteInterval=null;
+    const keyState={ ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false };
+    function startRemoteControl(robot){
+      if(remoteActiveRobot) stopRemoteControl();
+      remoteActiveRobot=robot;
+      document.getElementById('remoteHint').style.display='block';
+      document.getElementById('sysStatus').innerText=`遥控模式: 机器人 ${robot.id}`;
+      if(remoteInterval) clearInterval(remoteInterval);
+      remoteInterval=setInterval(()=>{
+        if(!remoteActiveRobot) return;
+        let dx=0,dz=0;
+        if(keyState.ArrowUp) dz=1;
+        if(keyState.ArrowDown) dz=-1;
+        if(keyState.ArrowLeft) dx=-1;
+        if(keyState.ArrowRight) dx=1;
+        if(dx===0&&dz===0) return;
+        const len=Math.hypot(dx,dz); dx/=len; dz/=len;
+        const step=1.2;
+        const newX=remoteActiveRobot.group.position.x+dx*step, newZ=remoteActiveRobot.group.position.z+dz*step;
+        if(disableBoundaryCounter===0 && isDeployed && remoteActiveRobot.isActive && isWithinRoad(remoteActiveRobot.group.position.x, remoteActiveRobot.group.position.z) && !isWithinRoad(newX,newZ)){}
+        else remoteActiveRobot.setTarget(newX,newZ);
+      },100);
+    }
+    function stopRemoteControl(){ if(remoteInterval){ clearInterval(remoteInterval); remoteInterval=null; } remoteActiveRobot=null; document.getElementById('remoteHint').style.display='none'; document.getElementById('sysStatus').innerText='待命'; }
+    window.addEventListener('keydown',(e)=>{ if(remoteActiveRobot && (e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight')){ e.preventDefault(); keyState[e.key]=true; } if(remoteActiveRobot && e.key===' '){ e.preventDefault(); stopRemoteControl(); } });
+    window.addEventListener('keyup',(e)=>{ if(remoteActiveRobot && (e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight')) keyState[e.key]=false; });
+    document.getElementById('btnRemoteControl').onclick=()=>{ if(selectedSet.size!==1) alert("请先单选一个机器人"); else{ const robot=Array.from(selectedSet)[0]; if(!robot.isActive) alert("该机器人不在活跃状态"); else startRemoteControl(robot); selectedSet.clear(); updateHighlights(); updateSelPanel(); } };
+    
+    // 路径规划弹窗 (完整)
+    const modal=document.getElementById('pathModal');
+    const planCanvas=document.getElementById('planCanvas');
+    const planCtx=planCanvas.getContext('2d');
+    let planWidth=800, planHeight=600;
+    planCanvas.width=planWidth; planCanvas.height=planHeight;
+    let drawnPath=[], selectedTeam=null, teamBounds={ nw:null, se:null }, isDrawing=false;
+    function updateTeamBounds(){
+      const nwRobots=robots.filter(r=>r.id<10 && r.isActive);
+      const seRobots=robots.filter(r=>r.id>=10 && r.isActive);
+      if(nwRobots.length){ let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity; nwRobots.forEach(r=>{ minX=Math.min(minX,r.group.position.x); maxX=Math.max(maxX,r.group.position.x); minZ=Math.min(minZ,r.group.position.z); maxZ=Math.max(maxZ,r.group.position.z); }); teamBounds.nw={ minX, maxX, minZ, maxZ }; }
+      if(seRobots.length){ let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity; seRobots.forEach(r=>{ minX=Math.min(minX,r.group.position.x); maxX=Math.max(maxX,r.group.position.x); minZ=Math.min(minZ,r.group.position.z); maxZ=Math.max(maxZ,r.group.position.z); }); teamBounds.se={ minX, maxX, minZ, maxZ }; }
+    }
+    function drawPlanningOverlay(){
+      planCtx.fillStyle='#050a12'; planCtx.fillRect(0,0,planWidth,planHeight);
+      const worldToCanvas=(x,z)=>({ x:(x+85)/170*planWidth, y:(z+85)/170*planHeight });
+      const left=worldToCanvas(ROAD_BOUNDS.x_min,0).x, right=worldToCanvas(ROAD_BOUNDS.x_max,0).x, top=worldToCanvas(0,ROAD_BOUNDS.z_max).y, bottom=worldToCanvas(0,ROAD_BOUNDS.z_min).y;
+      planCtx.strokeStyle='#2a6c8e'; planCtx.strokeRect(left,top,right-left,bottom-top);
+      planCtx.fillStyle='#1e2a3a'; planCtx.fillRect(left,top,right-left,bottom-top);
+      robots.forEach(r=>{ const p=worldToCanvas(r.group.position.x,r.group.position.z); planCtx.fillStyle=r.id<10?'#f97316':'#3b82f6'; planCtx.beginPath(); planCtx.arc(p.x,p.y,4,0,Math.PI*2); planCtx.fill(); planCtx.fillStyle='#fff'; planCtx.font='bold 10px monospace'; planCtx.fillText(r.id,p.x-3,p.y-3); });
+      planCtx.setLineDash([8,6]); planCtx.lineWidth=2;
+      if(teamBounds.nw){ const p1=worldToCanvas(teamBounds.nw.minX,teamBounds.nw.minZ), p2=worldToCanvas(teamBounds.nw.maxX,teamBounds.nw.maxZ); planCtx.strokeStyle='#facc15'; planCtx.strokeRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y); }
+      if(teamBounds.se){ const p1=worldToCanvas(teamBounds.se.minX,teamBounds.se.minZ), p2=worldToCanvas(teamBounds.se.maxX,teamBounds.se.maxZ); planCtx.strokeStyle='#facc15'; planCtx.strokeRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y); }
+      planCtx.setLineDash([]);
+      if(drawnPath.length){ planCtx.beginPath(); planCtx.strokeStyle='#0f9b5e'; planCtx.lineWidth=2; const first=worldToCanvas(drawnPath[0].x,drawnPath[0].z); planCtx.moveTo(first.x,first.y); for(let i=1;i<drawnPath.length;i++){ const pt=worldToCanvas(drawnPath[i].x,drawnPath[i].z); planCtx.lineTo(pt.x,pt.y); } planCtx.stroke(); }
+    }
+    function handleCanvasMouse(e){
+      const rect=planCanvas.getBoundingClientRect();
+      const scaleX=planCanvas.width/rect.width, scaleY=planCanvas.height/rect.height;
+      let canvasX=(e.clientX-rect.left)*scaleX, canvasY=(e.clientY-rect.top)*scaleY;
+      canvasX=Math.min(Math.max(0,canvasX),planWidth); canvasY=Math.min(Math.max(0,canvasY),planHeight);
+      const worldX=(canvasX/planWidth)*170-85, worldZ=(canvasY/planHeight)*170-85;
+      if(e.type==='mousedown'){
+        if(teamBounds.nw&&worldX>=teamBounds.nw.minX&&worldX<=teamBounds.nw.maxX&&worldZ>=teamBounds.nw.minZ&&worldZ<=teamBounds.nw.maxZ){ selectedTeam='nw'; isDrawing=true; drawnPath=[{x:worldX,z:worldZ}]; }
+        else if(teamBounds.se&&worldX>=teamBounds.se.minX&&worldX<=teamBounds.se.maxX&&worldZ>=teamBounds.se.minZ&&worldZ<=teamBounds.se.maxZ){ selectedTeam='se'; isDrawing=true; drawnPath=[{x:worldX,z:worldZ}]; }
+        else{ selectedTeam=null; isDrawing=false; drawnPath=[]; }
+        drawPlanningOverlay();
+      } else if(e.type==='mousemove' && isDrawing && selectedTeam){ drawnPath.push({x:worldX,z:worldZ}); drawPlanningOverlay(); }
+      else if(e.type==='mouseup') isDrawing=false;
+    }
+    planCanvas.addEventListener('mousedown',handleCanvasMouse);
+    planCanvas.addEventListener('mousemove',handleCanvasMouse);
+    planCanvas.addEventListener('mouseup',handleCanvasMouse);
+    document.getElementById('btnPathPlanning').onclick=()=>{ updateTeamBounds(); drawnPath=[]; selectedTeam=null; drawPlanningOverlay(); modal.style.display='flex'; };
+    document.getElementById('closeModalBtn').onclick=()=>{ modal.style.display='none'; };
+    document.getElementById('cancelPathBtn').onclick=()=>{ drawnPath=[]; selectedTeam=null; drawPlanningOverlay(); };
+    document.getElementById('startMoveBtn').onclick=()=>{
+      if(!selectedTeam||drawnPath.length<2){ alert("请先选择一队并画出路径"); return; }
+      const teamRobots=robots.filter(r=>(selectedTeam==='nw'?r.id<10:r.id>=10)&&r.isActive);
+      if(teamRobots.length===0){ alert("该队没有活跃机器人"); return; }
+      let sumDx=0,sumDz=0; for(let i=1;i<drawnPath.length;i++){ sumDx+=drawnPath[i].x-drawnPath[i-1].x; sumDz+=drawnPath[i].z-drawnPath[i-1].z; }
+      const isVertical=Math.abs(sumDz)>Math.abs(sumDx);
+      const laneOffset=(currentMode==='morning'?-LANE_WIDTH:(currentMode==='evening'?LANE_WIDTH:0));
+      let targetPoints=[];
+      if(isVertical){
+        const startZ=drawnPath[0].z, endZ=drawnPath[drawnPath.length-1].z;
+        teamRobots.forEach((_,i)=>{ const t=teamRobots.length===1?0.5:i/(teamRobots.length-1); targetPoints.push({x:laneOffset, z:startZ+t*(endZ-startZ)}); });
+      } else {
+        const startX=drawnPath[0].x, endX=drawnPath[drawnPath.length-1].x;
+        teamRobots.forEach((_,i)=>{ const t=teamRobots.length===1?0.5:i/(teamRobots.length-1); targetPoints.push({x:startX+t*(endX-startX), z:laneOffset}); });
+      }
+      teamRobots.forEach((r,idx)=>r.setTarget(targetPoints[idx].x,targetPoints[idx].z));
+      modal.style.display='none';
+      document.getElementById('sysStatus').innerText='路径运动开始';
+    };
+    
+    // 动画
+    let lastTime=0;
+    function animate(){
+      const delta=Math.min(0.033, performance.now()/1000 - lastTime); lastTime=performance.now()/1000;
+      const time=performance.now()*0.001;
+      robots.forEach(r=>r.update(delta,time));
+      if(disableBoundaryCounter>0 && robots.every(r=>r.path.length===0)) disableBoundaryCounter=0;
+      controls.update();
+      renderer.render(scene,camera);
+      labelRenderer.render(scene,camera);
+      drawMap();
+      updateBatteryUI();
+      requestAnimationFrame(animate);
+    }
+    animate();
+    window.onresize=()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); labelRenderer.setSize(innerWidth,innerHeight); };
+  </script>
+</body>
+</html>

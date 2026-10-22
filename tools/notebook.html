@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>流程图笔记本</title>
+<style>
+  :root {
+    --bg: #ece7dc; --paper: #fffcf6; --ink: #1c1915; --muted: #5c574e; --line: #d4cbb8;
+    --accent: #1a365d; --danger: #c53030; --bar-h: 52px; --insp-w: 280px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font: 14px/1.45 "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; overflow: hidden; }
+  button, select, input, textarea { font: inherit; }
+  .top {
+    min-height: var(--bar-h); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    padding: 6px 10px; background: var(--accent); color: #fff; z-index: 40;
+    padding-top: calc(6px + env(safe-area-inset-top, 0px));
+  }
+  .top b { font-size: 14px; margin-right: 4px; }
+  .top a { color: #fff; text-decoration: none; border: 1px solid #ffffff55; padding: 4px 8px; border-radius: 6px; font-size: 12px; }
+  .tools { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+  .btn { border: 0; background: #fff; color: var(--accent); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 650; font-size: 12px; }
+  .btn.ghost { background: transparent; color: #fff; border: 1px solid #ffffff55; }
+  .btn.on { background: #ed8936; color: #fff; }
+  .btn.danger { background: var(--danger); color: #fff; }
+  .view { display: none; height: calc(100% - 58px - env(safe-area-inset-top, 0px)); }
+  .view.on { display: flex; flex-direction: column; }
+  .home-body { flex: 1; overflow: auto; padding: 16px; padding-bottom: calc(24px + var(--safe-b)); }
+  .book-title { width: min(100%, 480px); font-size: 20px; font-weight: 700; border: 0; background: transparent; padding: 4px 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; cursor: pointer; }
+  .card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+  .card svg { display: block; width: 100%; height: 110px; background: #f7f3ea; }
+  .card .meta { padding: 10px 12px 12px; }
+  .card input.name { width: 100%; border: 0; background: transparent; font-weight: 700; font-size: 14px; }
+  .card .when { font-size: 11px; color: var(--muted); margin: 4px 0 8px; }
+  .empty { color: var(--muted); padding: 40px 8px; text-align: center; }
+  .workspace { display: flex; flex: 1; min-height: 42vh; }
+  .canvas-wrap { flex: 1; position: relative; min-width: 0; background: #f7f3ea;
+    background-image: radial-gradient(#d8d0c0 1px, transparent 1px); background-size: 18px 18px; }
+  svg#stage { display: block; width: 100%; height: 100%; touch-action: none; font-family: inherit; }
+  .legend { position: absolute; left: 10px; bottom: 10px; background: #fffcf6ee; border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 10px; font-size: 11px; max-width: 220px; pointer-events: none; }
+  .legend span { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+  .legend i { width: 22px; height: 0; border-top: 3px solid currentColor; }
+  .hintbar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    background: #1a365dee; color: #fff; padding: 4px 12px; border-radius: 999px; font-size: 12px; pointer-events: none; opacity: 0; }
+  .hintbar.show { opacity: 1; }
+  .inspector { width: var(--insp-w); background: var(--paper); border-left: 1px solid var(--line); overflow: auto; padding: 12px 14px 24px; flex-shrink: 0; }
+  .inspector h3 { margin: 0 0 10px; font-size: 13px; color: var(--accent); }
+  .fg { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
+  .fg label { font-size: 11px; color: var(--muted); font-weight: 700; }
+  .fg input[type=text], .fg select, .fg input[type=number] { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; }
+  .fg input[type=color] { width: 100%; height: 34px; border: 1px solid var(--line); border-radius: 6px; padding: 2px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .muted { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .below { background: var(--paper); border-top: 1px solid var(--line); overflow: auto; max-height: 38vh; padding: 12px 16px calc(16px + var(--safe-b)); }
+  .below h3 { margin: 8px 0 8px; font-size: 14px; }
+  .below table { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; }
+  .below th, .below td { border: 1px solid var(--line); padding: 5px 7px; text-align: left; }
+  .below th { background: #efe8db; }
+  #notes { width: 100%; min-height: 90px; border: 1px solid var(--line); border-radius: 8px; padding: 8px; resize: vertical; }
+  .sheet-handle { display: none; }
+  .fabs { display: none; }
+  .node-g { cursor: grab; }
+  .sel-ring { fill: none; stroke: #ed8936; stroke-width: 2.5; stroke-dasharray: 5 3; }
+  .line-hit { fill: none; stroke: transparent; stroke-width: 16; cursor: pointer; }
+  .line-path { fill: none; }
+  .line-lab { font-size: 11px; font-weight: 700; pointer-events: none; }
+  .src-hi .shape { filter: brightness(1.15); }
+  .doc-name { border: 0; background: transparent; color: #fff; font-weight: 700; width: min(40vw, 220px); }
+  @media (max-width: 800px) {
+    .desk-only { display: none !important; }
+    .workspace { min-height: 48vh; }
+    .inspector {
+      position: fixed; left: 0; right: 0; bottom: 0; width: 100%; max-height: 55vh;
+      border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+      transform: translateY(110%); transition: transform .22s ease; z-index: 30;
+      padding-bottom: calc(16px + var(--safe-b));
+    }
+    .inspector.open { transform: translateY(0); }
+    .sheet-handle { display: block; width: 42px; height: 4px; background: #cfc6b6; border-radius: 4px; margin: 2px auto 10px; }
+    .fabs { display: flex; flex-direction: column; gap: 8px; position: absolute; right: 12px; bottom: 12px; z-index: 20; }
+    .fab { width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 18px; font-weight: 700; }
+    .fab.on { background: #ed8936; }
+    .below { max-height: none; }
+    .view.on { overflow: auto; display: block; }
+    #view-editor.on .workspace { height: 55vh; display: flex; }
+  }
+</style>
+</head>
+<body>
+<div class="top" id="topHome">
+  <b>流程图笔记本</b>
+  <a href="../index.html">回首页</a>
+  <div class="tools">
+    <button class="btn" id="btnNew" type="button">新建</button>
+    <button class="btn ghost" id="btnSample" type="button">导入测控示例</button>
+    <button class="btn ghost" id="btnExportBook" type="button">导出整本 JSON</button>
+    <label class="btn ghost">导入 JSON<input id="fileBook" type="file" accept="application/json,.json" hidden /></label>
+    <button class="btn ghost" id="btnHtml" type="button">下载带数据 HTML</button>
+  </div>
+</div>
+<div class="top" id="topEdit" style="display:none">
+  <button class="btn ghost" id="btnBack" type="button">返回清单</button>
+  <input class="doc-name" id="editName" placeholder="未命名" />
+  <div class="tools">
+    <button class="btn desk-only" id="btnAdd" type="button">添加节点</button>
+    <button class="btn desk-only" id="btnConnect" type="button">连接</button>
+    <button class="btn ghost" id="btnUndo" type="button">撤销</button>
+    <button class="btn ghost" id="btnRedo" type="button">重做</button>
+    <button class="btn ghost desk-only" id="btnSnap" type="button">吸附</button>
+    <button class="btn ghost" id="btnPng" type="button">导出 PNG</button>
+    <button class="btn ghost" id="btnExportDoc" type="button">导出此图 JSON</button>
+  </div>
+</div>
+
+<div class="view on" id="view-home">
+  <div class="home-body">
+    <input class="book-title" id="bookTitle" placeholder="未命名笔记本" />
+    <p class="muted" id="bookHint">点「新建」开始。卡片可改名、删除。数据自动保存在本机，也请导出 JSON 或下载 HTML 做备份。</p>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty">还没有图。点右上角「新建」。</div>
+  </div>
+</div>
+
+<div class="view" id="view-editor">
+  <div class="workspace">
+    <div class="canvas-wrap">
+      <svg id="stage" xmlns="http://www.w3.org/2000/svg">
+        <defs id="defs"></defs>
+        <g id="world"><g id="lines"></g><g id="nodes"></g></g>
+      </svg>
+      <div class="hintbar" id="hint"></div>
+      <div class="legend" id="legend"></div>
+      <div class="fabs">
+        <button class="fab" id="fabAdd" type="button">+</button>
+        <button class="fab" id="fabConnect" type="button">连</button>
+      </div>
+    </div>
+    <aside class="inspector" id="inspector">
+      <div class="sheet-handle"></div>
+      <div id="inspEmpty"><h3>未选中</h3><p class="muted">点框图或连线。拖框图改位置。空白拖动画布，滚轮/双指缩放。</p></div>
+      <div id="inspNode" style="display:none">
+        <h3>框图</h3>
+        <div class="fg"><label>标题</label><input type="text" id="nText" /></div>
+        <div class="fg"><label>副标题</label><input type="text" id="nSub" /></div>
+        <div class="fg"><label>形状</label>
+          <select id="nShape">
+            <option value="round">圆角框</option>
+            <option value="rect">直角框</option>
+            <option value="pill">胶囊</option>
+            <option value="diamond">菱形</option>
+            <option value="circle">椭圆</option>
+            <option value="hex">六边形</option>
+            <option value="cylinder">柱体</option>
+          </select>
+        </div>
+        <div class="fg"><label>一键预设</label>
+          <select id="nPreset">
+            <option value="">（保持当前色）</option>
+            <option value="start">开始/结束</option>
+            <option value="process">过程</option>
+            <option value="decision">判断</option>
+            <option value="data">数据</option>
+            <option value="device">设备</option>
+          </select>
+        </div>
+        <div class="row2">
+          <div class="fg"><label>填充</label><input type="color" id="nFill" /></div>
+          <div class="fg"><label>边框</label><input type="color" id="nStroke" /></div>
+        </div>
+        <div class="fg"><label>文字色</label><input type="color" id="nTfill" /></div>
+        <div class="row2">
+          <div class="fg"><label>宽</label><input type="number" id="nW" min="60" max="420" step="4" /></div>
+          <div class="fg"><label>高</label><input type="number" id="nH" min="32" max="200" step="2" /></div>
+        </div>
+        <button class="btn" id="nDup" type="button" style="width:100%;margin-bottom:8px">复制</button>
+        <button class="btn danger" id="nDel" type="button" style="width:100%">删除框图</button>
+      </div>
+      <div id="inspLink" style="display:none">
+        <h3>连线</h3>
+        <div class="fg"><label>类型</label>
+          <select id="lType">
+            <option value="flow">流程</option>
+            <option value="decision">判断</option>
+            <option value="data">数据</option>
+            <option value="depend">依赖</option>
+            <option value="power">电源</option>
+            <option value="signal">信号</option>
+            <option value="net">网络</option>
+            <option value="usb">USB</option>
+            <option value="custom">自定义</option>
+          </select>
+        </div>
+        <div class="fg"><label>颜色</label><input type="color" id="lColor" /></div>
+        <div class="fg"><label>粗细 <span id="lWlab">2.5</span></label><input type="range" id="lWidth" min="1" max="8" step="0.5" /></div>
+        <div class="fg"><label>线型</label>
+          <select id="lDash">
+            <option value="solid">实线</option>
+            <option value="dash">虚线</option>
+            <option value="dot">点线</option>
+            <option value="dashdot">点划线</option>
+          </select>
+        </div>
+        <div class="fg"><label>箭头</label>
+          <select id="lArrow">
+            <option value="end">终点</option>
+            <option value="start">起点</option>
+            <option value="both">双向</option>
+            <option value="none">无</option>
+          </select>
+        </div>
+        <div class="fg"><label>走线</label>
+          <select id="lRoute">
+            <option value="ortho">正交折线</option>
+            <option value="straight">直线</option>
+            <option value="curve">曲线</option>
+          </select>
+        </div>
+        <div class="fg"><label>中点标注</label><input type="text" id="lLabel" /></div>
+        <button class="btn danger" id="lDel" type="button" style="width:100%">删除连线</button>
+      </div>
+    </aside>
+  </div>
+  <div class="below">
+    <h3>自动提炼（随图更新）</h3>
+    <div id="auto" class="muted">空白图。</div>
+    <h3>我的记录</h3>
+    <textarea id="notes" placeholder="手写备注不会被上面的自动提炼覆盖。"></textarea>
+  </div>
+</div>
+
+<script>
+/*__BAKED_START*/
+window.__BAKED__ = null;
+/*__BAKED_END*/
+(function () {
+  const KEY = "flow-notebook-v1";
+  const TYPE = {
+    flow: { color: "#2b6cb0", dash: "solid", width: 2.5, name: "流程" },
+    decision: { color: "#dd6b20", dash: "dash", width: 2.5, name: "判断" },
+    data: { color: "#6c3483", dash: "solid", width: 2.5, name: "数据" },
+    depend: { color: "#4a5568", dash: "dot", width: 2, name: "依赖" },
+    power: { color: "#c0392b", dash: "solid", width: 3, name: "电源" },
+    signal: { color: "#1e8449", dash: "solid", width: 2.5, name: "信号" },
+    net: { color: "#6c3483", dash: "solid", width: 3, name: "网络" },
+    usb: { color: "#2471a3", dash: "solid", width: 2.5, name: "USB" },
+    custom: { color: "#718096", dash: "solid", width: 2.5, name: "自定义" }
+  };
+  const NODE_PRESET = {
+    start: { fill: "#276749", stroke: "#1c4a34", text: "#ffffff", shape: "pill" },
+    process: { fill: "#2c5282", stroke: "#1a365d", text: "#ffffff", shape: "round" },
+    decision: { fill: "#c05621", stroke: "#9c4221", text: "#ffffff", shape: "diamond" },
+    data: { fill: "#44337a", stroke: "#2d2460", text: "#ffffff", shape: "cylinder" },
+    device: { fill: "#234e52", stroke: "#1a3a3c", text: "#ffffff", shape: "hex" }
+  };
+  const SHAPE_CN = { round: "圆角", rect: "直角", pill: "胶囊", diamond: "菱形", circle: "椭圆", hex: "六边", cylinder: "柱体" };
+  const DASH = { solid: "", dash: "8 5", dot: "2 4", dashdot: "10 4 2 4" };
+
+  function emptyBook() { return { title: "未命名笔记本", docs: [] }; }
+  function newDoc(name) {
+    return { id: "d_" + Date.now() + "_" + Math.random().toString(16).slice(2), name: name || "未命名", updatedAt: Date.now(), nodes: [], links: [], notes: "" };
+  }
+  function mkL(id, s, t, type, label) {
+    const p = TYPE[type] || TYPE.flow;
+    return { id: id, s: s, t: t, type: type, color: p.color, width: p.width, dash: p.dash, arrow: "end", route: "ortho", label: label || "" };
+  }
+  function sampleDoc() {
+    const d = newDoc("示例");
+    d.nodes = [
+      { id: "n_batt", x: 28, y: 24, w: 188, h: 52, text: "12V 26Ah 电池", subtext: "", shape: "cylinder", fill: "#1a365d", stroke: "#0f2744", tfill: "#ffffff" },
+      { id: "n_master", x: 28, y: 108, w: 188, h: 50, text: "总开关", subtext: "", shape: "pill", fill: "#9b1c1c", stroke: "#6b1212", tfill: "#ffffff" },
+      { id: "n_dist", x: 28, y: 190, w: 188, h: 50, text: "配电", subtext: "", shape: "round", fill: "#7b341e", stroke: "#5a2716", tfill: "#ffffff" },
+      { id: "n_orin", x: 300, y: 24, w: 210, h: 52, text: "AGX Orin", subtext: "DC 5525", shape: "round", fill: "#2c5282", stroke: "#1a365d", tfill: "#ffffff" },
+      { id: "n_cam", x: 300, y: 108, w: 210, h: 50, text: "海康相机", subtext: "网口", shape: "round", fill: "#234e52", stroke: "#1a3a3c", tfill: "#ffffff" },
+      { id: "n_radar", x: 300, y: 188, w: 210, h: 50, text: "Livox 雷达", subtext: "", shape: "round", fill: "#44337a", stroke: "#2d2460", tfill: "#ffffff" },
+      { id: "n_stm", x: 590, y: 24, w: 220, h: 56, text: "STM32 同步", subtext: "PA1 / PB5 / PA9", shape: "round", fill: "#276749", stroke: "#1c4a34", tfill: "#ffffff" }
+    ];
+    d.links = [
+      mkL("a", "n_batt", "n_master", "power", ""),
+      mkL("b", "n_master", "n_dist", "power", ""),
+      mkL("c", "n_dist", "n_orin", "power", "5525"),
+      mkL("d", "n_dist", "n_cam", "power", ""),
+      mkL("e", "n_dist", "n_radar", "power", ""),
+      mkL("f", "n_stm", "n_cam", "signal", "PA1"),
+      mkL("g", "n_stm", "n_radar", "signal", "PB5"),
+      mkL("h", "n_cam", "n_orin", "net", "RJ45"),
+      mkL("i", "n_radar", "n_orin", "net", "RJ45")
+    ];
+    return d;
+  }
+
+  function loadBook() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const b = JSON.parse(raw);
+        if (b && b.docs) return b;
+      }
+    } catch (e) {}
+    if (window.__BAKED__ && window.__BAKED__.docs) return window.__BAKED__;
+    return emptyBook();
+  }
+
+  let book = loadBook();
+  let currentId = null;
+  let state = { nodes: [], links: [] };
+  let cam = { x: 16, y: 12, k: 0.95 };
+  let selected = null, connectOn = false, connectSrc = null, snap = true, space = false;
+  let hist = [], histI = -1;
+  let drag = null, pan = null, pinch = null;
+  const ptrs = new Map();
+
+  const svg = document.getElementById("stage");
+  const world = document.getElementById("world");
+  const gLines = document.getElementById("lines");
+  const gNodes = document.getElementById("nodes");
+  const defs = document.getElementById("defs");
+  const inspector = document.getElementById("inspector");
+  const hint = document.getElementById("hint");
+
+  function cur() { return book.docs.find(function (d) { return d.id === currentId; }); }
+  function persist() {
+    const d = cur();
+    if (d) {
+      d.nodes = state.nodes;
+      d.links = state.links;
+      d.updatedAt = Date.now();
+    }
+    try { localStorage.setItem(KEY, JSON.stringify(book)); } catch (e) {}
+  }
+  function snapshot() {
+    hist = hist.slice(0, histI + 1);
+    hist.push(JSON.stringify({ nodes: state.nodes, links: state.links }));
+    if (hist.length > 50) hist.shift();
+    histI = hist.length - 1;
+    persist();
+    refreshAuto();
+  }
+  function undo() {
+    if (histI <= 0) return;
+    histI--;
+    const s = JSON.parse(hist[histI]);
+    state.nodes = s.nodes; state.links = s.links;
+    persist(); render(); select(null); refreshAuto();
+  }
+  function redo() {
+    if (histI >= hist.length - 1) return;
+    histI++;
+    const s = JSON.parse(hist[histI]);
+    state.nodes = s.nodes; state.links = s.links;
+    persist(); render(); select(null); refreshAuto();
+  }
+
+  function showHome() {
+    persist();
+    currentId = null;
+    document.getElementById("view-home").classList.add("on");
+    document.getElementById("view-editor").classList.remove("on");
+    document.getElementById("topHome").style.display = "flex";
+    document.getElementById("topEdit").style.display = "none";
+    renderHome();
+  }
+  function openDoc(id) {
+    const d = book.docs.find(function (x) { return x.id === id; });
+    if (!d) return;
+    currentId = id;
+    state = { nodes: JSON.parse(JSON.stringify(d.nodes || [])), links: JSON.parse(JSON.stringify(d.links || [])) };
+    hist = []; histI = -1;
+    selected = null; connectOn = false; connectSrc = null;
+    cam = { x: 16, y: 12, k: 0.95 };
+    document.getElementById("view-home").classList.remove("on");
+    document.getElementById("view-editor").classList.add("on");
+    document.getElementById("topHome").style.display = "none";
+    document.getElementById("topEdit").style.display = "flex";
+    document.getElementById("editName").value = d.name || "";
+    document.getElementById("notes").value = d.notes || "";
+    snapshot();
+    render();
+    select(null);
+    refreshAuto();
+  }
+
+  function fmtTime(ts) {
+    const t = new Date(ts || Date.now());
+    const p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return t.getFullYear() + "-" + p(t.getMonth() + 1) + "-" + p(t.getDate()) + " " + p(t.getHours()) + ":" + p(t.getMinutes());
+  }
+
+  function thumb(doc) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svgE = document.createElementNS(ns, "svg");
+    svgE.setAttribute("viewBox", "0 0 280 110");
+    const nodes = doc.nodes || [];
+    if (!nodes.length) {
+      const t = document.createElementNS(ns, "text");
+      t.setAttribute("x", "140"); t.setAttribute("y", "58"); t.setAttribute("text-anchor", "middle");
+      t.setAttribute("fill", "#a0aec0"); t.setAttribute("font-size", "12"); t.textContent = "空白";
+      svgE.appendChild(t);
+      return svgE;
+    }
+    let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+    nodes.forEach(function (n) {
+      minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
+      maxX = Math.max(maxX, n.x + n.w); maxY = Math.max(maxY, n.y + n.h);
+    });
+    const bw = Math.max(80, maxX - minX), bh = Math.max(40, maxY - minY);
+    const k = Math.min(260 / bw, 90 / bh);
+    const ox = (280 - bw * k) / 2 - minX * k, oy = (110 - bh * k) / 2 - minY * k;
+    (doc.links || []).forEach(function (l) {
+      const a = nodes.find(function (n) { return n.id === l.s; });
+      const b = nodes.find(function (n) { return n.id === l.t; });
+      if (!a || !b) return;
+      const p = document.createElementNS(ns, "line");
+      p.setAttribute("x1", ox + (a.x + a.w / 2) * k);
+      p.setAttribute("y1", oy + (a.y + a.h / 2) * k);
+      p.setAttribute("x2", ox + (b.x + b.w / 2) * k);
+      p.setAttribute("y2", oy + (b.y + b.h / 2) * k);
+      p.setAttribute("stroke", l.color || "#888");
+      p.setAttribute("stroke-width", "1.5");
+      svgE.appendChild(p);
+    });
+    nodes.forEach(function (n) {
+      const r = document.createElementNS(ns, "rect");
+      r.setAttribute("x", ox + n.x * k); r.setAttribute("y", oy + n.y * k);
+      r.setAttribute("width", Math.max(8, n.w * k)); r.setAttribute("height", Math.max(6, n.h * k));
+      r.setAttribute("rx", 3); r.setAttribute("fill", n.fill || "#4a5568");
+      svgE.appendChild(r);
+    });
+    return svgE;
+  }
+
+  function renderHome() {
+    document.getElementById("bookTitle").value = book.title || "";
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    document.getElementById("empty").style.display = book.docs.length ? "none" : "block";
+    book.docs.slice().sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); }).forEach(function (d) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.appendChild(thumb(d));
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const inp = document.createElement("input");
+      inp.className = "name"; inp.value = d.name || ""; inp.placeholder = "未命名";
+      inp.onclick = function (e) { e.stopPropagation(); };
+      inp.onchange = function () { d.name = inp.value; persist(); };
+      const when = document.createElement("div");
+      when.className = "when";
+      when.textContent = fmtTime(d.updatedAt) + " · " + (d.nodes || []).length + " 框 " + (d.links || []).length + " 线";
+      const del = document.createElement("button");
+      del.className = "btn danger"; del.type = "button"; del.textContent = "删除";
+      del.style.fontSize = "11px";
+      del.onclick = function (e) {
+        e.stopPropagation();
+        if (!confirm("删除这张图？")) return;
+        book.docs = book.docs.filter(function (x) { return x.id !== d.id; });
+        persist(); renderHome();
+      };
+      meta.appendChild(inp); meta.appendChild(when); meta.appendChild(del);
+      card.appendChild(meta);
+      card.onclick = function () { openDoc(d.id); };
+      grid.appendChild(card);
+    });
+  }
+
+  document.getElementById("bookTitle").addEventListener("input", function (e) {
+    book.title = e.target.value;
+    persist();
+  });
+  document.getElementById("btnNew").onclick = function () {
+    const d = newDoc("未命名");
+    book.docs.push(d);
+    persist();
+    openDoc(d.id);
+  };
+  document.getElementById("btnSample").onclick = function () {
+    book.docs.push(sampleDoc());
+    persist();
+    renderHome();
+  };
+  document.getElementById("btnBack").onclick = showHome;
+  document.getElementById("editName").addEventListener("input", function (e) {
+    const d = cur();
+    if (d) { d.name = e.target.value; persist(); refreshAuto(); }
+  });
+  document.getElementById("notes").addEventListener("input", function (e) {
+    const d = cur();
+    if (d) { d.notes = e.target.value; persist(); }
+  });
+
+  function nodeBy(id) { return state.nodes.find(function (n) { return n.id === id; }); }
+  function linkBy(id) { return state.links.find(function (l) { return l.id === id; }); }
+  function center(n) { return { x: n.x + n.w / 2, y: n.y + n.h / 2 }; }
+  function pairKey(s, t) { return s < t ? s + "|" + t : t + "|" + s; }
+  function pairIndex(link) {
+    const group = state.links.filter(function (l) { return pairKey(l.s, l.t) === pairKey(link.s, link.t); });
+    return { i: group.findIndex(function (l) { return l.id === link.id; }), n: group.length };
+  }
+  function dashAttr(d) { return DASH[d] || ""; }
+  function markerId(color, dir) { return "m_" + dir + "_" + String(color).replace("#", ""); }
+  function ensureMarker(color, dir) {
+    const id = markerId(color, dir);
+    if (document.getElementById(id)) return id;
+    const m = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    m.setAttribute("id", id);
+    m.setAttribute("viewBox", "0 0 10 10");
+    m.setAttribute("refX", dir === "start" ? "2" : "8");
+    m.setAttribute("refY", "5");
+    m.setAttribute("markerWidth", "7");
+    m.setAttribute("markerHeight", "7");
+    m.setAttribute("orient", "auto");
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("d", dir === "start" ? "M10 0 L0 5 L10 10 z" : "M0 0 L10 5 L0 10 z");
+    p.setAttribute("fill", color);
+    m.appendChild(p);
+    defs.appendChild(m);
+    return id;
+  }
+  function routePath(src, tgt, link) {
+    const a = center(src), b = center(tgt);
+    const pi = pairIndex(link);
+    const off = (pi.i - (pi.n - 1) / 2) * 16;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len * off, ny = dx / len * off;
+    const sx = a.x + nx, sy = a.y + ny, tx = b.x + nx, ty = b.y + ny;
+    const r = link.route || "ortho";
+    if (r === "straight") return { d: "M " + sx + " " + sy + " L " + tx + " " + ty, mx: (sx + tx) / 2, my: (sy + ty) / 2 };
+    if (r === "curve") {
+      const cx = (sx + tx) / 2 + nx * 0.4, cy = (sy + ty) / 2 + ny * 0.4;
+      return { d: "M " + sx + " " + sy + " Q " + cx + " " + cy + " " + tx + " " + ty, mx: cx, my: cy };
+    }
+    if (Math.abs(sx - tx) < 36 || Math.abs(sy - ty) < 36)
+      return { d: "M " + sx + " " + sy + " L " + tx + " " + ty, mx: (sx + tx) / 2, my: (sy + ty) / 2 };
+    const mx = (sx + tx) / 2;
+    const d = src.x < tgt.x
+      ? "M " + sx + " " + sy + " L " + mx + " " + sy + " L " + mx + " " + ty + " L " + tx + " " + ty
+      : "M " + sx + " " + sy + " L " + sx + " " + ((sy + ty) / 2) + " L " + tx + " " + ((sy + ty) / 2) + " L " + tx + " " + ty;
+    return { d: d, mx: mx, my: (sy + ty) / 2 };
+  }
+  function shapeEl(n) {
+    const ns = "http://www.w3.org/2000/svg";
+    const w = n.w, h = n.h, s = n.shape || "round";
+    let el;
+    if (s === "circle") {
+      el = document.createElementNS(ns, "ellipse");
+      el.setAttribute("cx", w / 2); el.setAttribute("cy", h / 2);
+      el.setAttribute("rx", w / 2 - 1); el.setAttribute("ry", h / 2 - 1);
+    } else if (s === "diamond") {
+      el = document.createElementNS(ns, "polygon");
+      el.setAttribute("points", w / 2 + ",1 " + (w - 1) + "," + h / 2 + " " + w / 2 + "," + (h - 1) + " 1," + h / 2);
+    } else if (s === "hex") {
+      el = document.createElementNS(ns, "polygon");
+      const pts = [];
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 3 * i - Math.PI / 6;
+        pts.push((w / 2 + (w / 2 - 2) * Math.cos(a)).toFixed(1) + "," + (h / 2 + (h / 2 - 2) * Math.sin(a)).toFixed(1));
+      }
+      el.setAttribute("points", pts.join(" "));
+    } else if (s === "cylinder") {
+      const g = document.createElementNS(ns, "g");
+      g.classList.add("shape");
+      const top = document.createElementNS(ns, "ellipse");
+      top.setAttribute("cx", w / 2); top.setAttribute("cy", 10);
+      top.setAttribute("rx", w / 2 - 2); top.setAttribute("ry", 9);
+      top.setAttribute("fill", n.fill); top.setAttribute("stroke", n.stroke); top.setAttribute("stroke-width", "2");
+      const body = document.createElementNS(ns, "path");
+      body.setAttribute("d", "M 2 10 V " + (h - 10) + " A " + (w / 2 - 2) + " 9 0 0 0 " + (w - 2) + " " + (h - 10) + " V 10");
+      body.setAttribute("fill", n.fill); body.setAttribute("stroke", n.stroke); body.setAttribute("stroke-width", "2");
+      g.appendChild(body); g.appendChild(top);
+      return g;
+    } else {
+      el = document.createElementNS(ns, "rect");
+      el.setAttribute("x", 1); el.setAttribute("y", 1);
+      el.setAttribute("width", w - 2); el.setAttribute("height", h - 2);
+      el.setAttribute("rx", s === "pill" ? h / 2 : s === "rect" ? 0 : 8);
+    }
+    el.classList.add("shape");
+    el.setAttribute("fill", n.fill);
+    el.setAttribute("stroke", n.stroke || n.fill);
+    el.setAttribute("stroke-width", "2");
+    return el;
+  }
+  function applyCam() { world.setAttribute("transform", "translate(" + cam.x + "," + cam.y + ") scale(" + cam.k + ")"); }
+
+  function render() {
+    if (!currentId) return;
+    gLines.innerHTML = ""; gNodes.innerHTML = ""; defs.innerHTML = "";
+    const ns = "http://www.w3.org/2000/svg";
+    state.links.forEach(function (link) {
+      const src = nodeBy(link.s), tgt = nodeBy(link.t);
+      if (!src || !tgt) return;
+      const rp = routePath(src, tgt, link);
+      const g = document.createElementNS(ns, "g");
+      g.dataset.id = link.id; g.classList.add("line-g");
+      const hit = document.createElementNS(ns, "path");
+      hit.setAttribute("d", rp.d); hit.setAttribute("class", "line-hit");
+      const path = document.createElementNS(ns, "path");
+      path.setAttribute("d", rp.d); path.setAttribute("class", "line-path");
+      path.setAttribute("stroke", link.color);
+      path.setAttribute("stroke-width", selected === link.id ? (Number(link.width) || 2.5) + 1.4 : (link.width || 2.5));
+      path.setAttribute("stroke-dasharray", dashAttr(link.dash));
+      path.setAttribute("stroke-linecap", "round"); path.setAttribute("stroke-linejoin", "round");
+      const ar = link.arrow || "end";
+      if (ar === "end" || ar === "both") path.setAttribute("marker-end", "url(#" + ensureMarker(link.color, "end") + ")");
+      if (ar === "start" || ar === "both") path.setAttribute("marker-start", "url(#" + ensureMarker(link.color, "start") + ")");
+      g.appendChild(hit); g.appendChild(path);
+      if (link.label) {
+        const lab = document.createElementNS(ns, "text");
+        lab.setAttribute("class", "line-lab"); lab.setAttribute("x", rp.mx); lab.setAttribute("y", rp.my - 6);
+        lab.setAttribute("text-anchor", "middle"); lab.setAttribute("fill", link.color); lab.textContent = link.label;
+        g.appendChild(lab);
+      }
+      g.addEventListener("pointerdown", function (e) { e.stopPropagation(); if (!connectOn) select(link.id); });
+      gLines.appendChild(g);
+    });
+    state.nodes.forEach(function (n) {
+      const g = document.createElementNS(ns, "g");
+      g.classList.add("node-g");
+      if (connectSrc === n.id) g.classList.add("src-hi");
+      g.dataset.id = n.id;
+      g.setAttribute("transform", "translate(" + n.x + "," + n.y + ")");
+      g.appendChild(shapeEl(n));
+      if (selected === n.id) {
+        const ring = document.createElementNS(ns, "rect");
+        ring.setAttribute("class", "sel-ring");
+        ring.setAttribute("x", -4); ring.setAttribute("y", -4);
+        ring.setAttribute("width", n.w + 8); ring.setAttribute("height", n.h + 8); ring.setAttribute("rx", 10);
+        g.appendChild(ring);
+      }
+      const tx = document.createElementNS(ns, "text");
+      tx.setAttribute("x", n.w / 2); tx.setAttribute("y", n.subtext ? n.h / 2 - 7 : n.h / 2 + 1);
+      tx.setAttribute("text-anchor", "middle"); tx.setAttribute("dominant-baseline", "middle");
+      tx.setAttribute("fill", n.tfill || "#fff"); tx.setAttribute("font-size", "13"); tx.setAttribute("font-weight", "700");
+      tx.setAttribute("pointer-events", "none"); tx.textContent = n.text;
+      g.appendChild(tx);
+      if (n.subtext) {
+        const st = document.createElementNS(ns, "text");
+        st.setAttribute("x", n.w / 2); st.setAttribute("y", n.h / 2 + 12);
+        st.setAttribute("text-anchor", "middle"); st.setAttribute("dominant-baseline", "middle");
+        st.setAttribute("fill", n.tfill || "#cbd5e1"); st.setAttribute("font-size", "11"); st.setAttribute("opacity", "0.85");
+        st.setAttribute("pointer-events", "none"); st.textContent = n.subtext;
+        g.appendChild(st);
+      }
+      g.addEventListener("pointerdown", function (e) { onNodeDown(e, n.id); });
+      gNodes.appendChild(g);
+    });
+    applyCam();
+    drawLegend();
+    refreshAuto();
+  }
+
+  function drawLegend() {
+    const used = [], seen = {};
+    state.links.forEach(function (l) { if (!seen[l.type]) { seen[l.type] = 1; used.push(l.type); } });
+    document.getElementById("legend").innerHTML = used.map(function (t) {
+      const p = TYPE[t] || TYPE.custom;
+      return "<span style='color:" + p.color + "'><i></i>" + p.name + "</span>";
+    }).join("");
+  }
+
+  function refreshAuto() {
+    const d = cur();
+    const box = document.getElementById("auto");
+    if (!d) { box.innerHTML = ""; return; }
+    const title = (d.name || "未命名");
+    const nodes = state.nodes, links = state.links;
+    const types = {};
+    links.forEach(function (l) { types[l.type] = (types[l.type] || 0) + 1; });
+    const indeg = {};
+    nodes.forEach(function (n) { indeg[n.id] = 0; });
+    links.forEach(function (l) { if (indeg[l.t] !== undefined) indeg[l.t]++; });
+    const starts = nodes.filter(function (n) { return indeg[n.id] === 0; });
+    let html = "<p><b>" + esc(title) + "</b> · " + nodes.length + " 个框图 · " + links.length + " 条连线</p>";
+    if (starts.length) html += "<p>可能的起点：" + starts.map(function (n) { return esc(n.text || n.id); }).join("、") + "</p>";
+    const tkeys = Object.keys(types);
+    if (tkeys.length) html += "<p>类型：" + tkeys.map(function (t) { return (TYPE[t] ? TYPE[t].name : t) + " ×" + types[t]; }).join("，") + "</p>";
+    html += "<table><thead><tr><th>框图</th><th>副标题</th><th>形状</th></tr></thead><tbody>";
+    if (!nodes.length) html += "<tr><td colspan='3'>无</td></tr>";
+    nodes.forEach(function (n) {
+      html += "<tr><td>" + esc(n.text) + "</td><td>" + esc(n.subtext || "") + "</td><td>" + (SHAPE_CN[n.shape] || n.shape || "") + "</td></tr>";
+    });
+    html += "</tbody></table><table style='margin-top:8px'><thead><tr><th>从</th><th>到</th><th>类型</th><th>标注</th></tr></thead><tbody>";
+    if (!links.length) html += "<tr><td colspan='4'>无</td></tr>";
+    links.forEach(function (l) {
+      const a = nodeBy(l.s), b = nodeBy(l.t);
+      html += "<tr><td>" + esc(a ? a.text : l.s) + "</td><td>" + esc(b ? b.text : l.t) + "</td><td>" + esc((TYPE[l.type] || TYPE.custom).name) + "</td><td>" + esc(l.label || "") + "</td></tr>";
+    });
+    html += "</tbody></table>";
+    box.innerHTML = html;
+  }
+  function esc(s) { return String(s || "").replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+
+  function showHint(t) {
+    hint.textContent = t; hint.classList.add("show");
+    clearTimeout(showHint._t);
+    showHint._t = setTimeout(function () { hint.classList.remove("show"); }, 1600);
+  }
+  function toHex(c) { return (c && c[0] === "#" && c.length === 7) ? c : "#888888"; }
+  function select(id) {
+    selected = id;
+    const node = nodeBy(id), link = linkBy(id);
+    document.getElementById("inspEmpty").style.display = (!node && !link) ? "block" : "none";
+    document.getElementById("inspNode").style.display = node ? "block" : "none";
+    document.getElementById("inspLink").style.display = link ? "block" : "none";
+    if (window.matchMedia("(max-width:800px)").matches) inspector.classList.toggle("open", !!(node || link));
+    if (node) {
+      document.getElementById("nText").value = node.text;
+      document.getElementById("nSub").value = node.subtext || "";
+      document.getElementById("nShape").value = node.shape || "round";
+      document.getElementById("nFill").value = toHex(node.fill);
+      document.getElementById("nStroke").value = toHex(node.stroke || node.fill);
+      document.getElementById("nTfill").value = toHex(node.tfill || "#ffffff");
+      document.getElementById("nW").value = node.w; document.getElementById("nH").value = node.h;
+      document.getElementById("nPreset").value = "";
+    }
+    if (link) {
+      document.getElementById("lType").value = TYPE[link.type] ? link.type : "custom";
+      document.getElementById("lColor").value = toHex(link.color);
+      document.getElementById("lWidth").value = link.width;
+      document.getElementById("lWlab").textContent = link.width;
+      document.getElementById("lDash").value = link.dash || "solid";
+      document.getElementById("lArrow").value = link.arrow || "end";
+      document.getElementById("lRoute").value = link.route || "ortho";
+      document.getElementById("lLabel").value = link.label || "";
+    }
+    render();
+  }
+  function screenToWorld(cx, cy) {
+    const r = svg.getBoundingClientRect();
+    return { x: (cx - r.left - cam.x) / cam.k, y: (cy - r.top - cam.y) / cam.k };
+  }
+  function onNodeDown(e, id) {
+    e.stopPropagation(); e.preventDefault();
+    try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+    if (connectOn) {
+      if (!connectSrc) { connectSrc = id; select(id); showHint("再点目标"); }
+      else if (connectSrc !== id) {
+        const p = TYPE.flow;
+        state.links.push({ id: "l_" + Date.now(), s: connectSrc, t: id, type: "flow", color: p.color, width: p.width, dash: p.dash, arrow: "end", route: "ortho", label: "" });
+        connectSrc = null; snapshot(); render(); showHint("已连线");
+      }
+      return;
+    }
+    select(id);
+    const n = nodeBy(id); const w = screenToWorld(e.clientX, e.clientY);
+    drag = { id: id, dx: w.x - n.x, dy: w.y - n.y, moved: false };
+  }
+  svg.addEventListener("pointerdown", function (e) {
+    if (e.target.closest && (e.target.closest(".node-g") || e.target.closest(".line-g"))) return;
+    try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 2) {
+      const arr = Array.from(ptrs.values());
+      pinch = { d: Math.hypot(arr[0].x - arr[1].x, arr[0].y - arr[1].y), k: cam.k, cx: (arr[0].x + arr[1].x) / 2, cy: (arr[0].y + arr[1].y) / 2 };
+      pan = null; return;
+    }
+    pan = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, moved: false };
+  });
+  svg.addEventListener("pointermove", function (e) {
+    if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && ptrs.size >= 2) {
+      const arr = Array.from(ptrs.values());
+      const d = Math.hypot(arr[0].x - arr[1].x, arr[0].y - arr[1].y);
+      if (pinch.d > 10) zoomAt(pinch.cx, pinch.cy, Math.min(3, Math.max(0.25, pinch.k * (d / pinch.d))));
+      return;
+    }
+    if (drag) {
+      const w = screenToWorld(e.clientX, e.clientY);
+      const n = nodeBy(drag.id);
+      let x = w.x - drag.dx, y = w.y - drag.dy;
+      if (snap) { x = Math.round(x / 8) * 8; y = Math.round(y / 8) * 8; }
+      n.x = x; n.y = y; drag.moved = true; render(); return;
+    }
+    if (pan) {
+      const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
+      if (Math.abs(dx) + Math.abs(dy) > 4) pan.moved = true;
+      cam.x = pan.cx + dx; cam.y = pan.cy + dy; applyCam();
+    }
+  });
+  function endPtr(e) {
+    ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null;
+    if (drag) { if (drag.moved) snapshot(); drag = null; }
+    if (pan && !pan.moved && !connectOn) select(null);
+    pan = null;
+  }
+  svg.addEventListener("pointerup", endPtr);
+  svg.addEventListener("pointercancel", endPtr);
+  svg.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    zoomAt(e.clientX, e.clientY, Math.min(3, Math.max(0.25, cam.k * (e.deltaY < 0 ? 1.12 : 1 / 1.12))));
+  }, { passive: false });
+  function zoomAt(clientX, clientY, nk) {
+    const r = svg.getBoundingClientRect();
+    const sx = clientX - r.left, sy = clientY - r.top;
+    const wx = (sx - cam.x) / cam.k, wy = (sy - cam.y) / cam.k;
+    cam.k = nk; cam.x = sx - wx * cam.k; cam.y = sy - wy * cam.k; applyCam();
+  }
+
+  function bindNodeField(id, fn) {
+    document.getElementById(id).addEventListener("input", function (e) {
+      const n = nodeBy(selected); if (!n) return; fn(n, e.target); persist(); render();
+    });
+    document.getElementById(id).addEventListener("change", function () { if (nodeBy(selected)) snapshot(); });
+  }
+  bindNodeField("nText", function (n, el) { n.text = el.value; });
+  bindNodeField("nSub", function (n, el) { n.subtext = el.value; });
+  bindNodeField("nShape", function (n, el) { n.shape = el.value; });
+  bindNodeField("nFill", function (n, el) { n.fill = el.value; });
+  bindNodeField("nStroke", function (n, el) { n.stroke = el.value; });
+  bindNodeField("nTfill", function (n, el) { n.tfill = el.value; });
+  bindNodeField("nW", function (n, el) { n.w = +el.value; });
+  bindNodeField("nH", function (n, el) { n.h = +el.value; });
+  document.getElementById("nPreset").addEventListener("change", function (e) {
+    const n = nodeBy(selected); const p = NODE_PRESET[e.target.value];
+    if (!n || !p) return;
+    n.fill = p.fill; n.stroke = p.stroke; n.tfill = p.text; if (p.shape) n.shape = p.shape;
+    snapshot(); select(n.id);
+  });
+  function bindLinkField(id, fn) {
+    document.getElementById(id).addEventListener("input", function (e) {
+      const l = linkBy(selected); if (!l) return; fn(l, e.target); persist(); render();
+    });
+    document.getElementById(id).addEventListener("change", function () { if (linkBy(selected)) snapshot(); });
+  }
+  bindLinkField("lColor", function (l, el) { l.color = el.value; });
+  bindLinkField("lWidth", function (l, el) { l.width = +el.value; document.getElementById("lWlab").textContent = el.value; });
+  bindLinkField("lDash", function (l, el) { l.dash = el.value; });
+  bindLinkField("lArrow", function (l, el) { l.arrow = el.value; });
+  bindLinkField("lRoute", function (l, el) { l.route = el.value; });
+  bindLinkField("lLabel", function (l, el) { l.label = el.value; });
+  document.getElementById("lType").addEventListener("change", function (e) {
+    const l = linkBy(selected); const p = TYPE[e.target.value];
+    if (!l || !p) return;
+    l.type = e.target.value; l.color = p.color; l.dash = p.dash; l.width = p.width;
+    snapshot(); select(l.id);
+  });
+  document.getElementById("nDel").onclick = function () {
+    if (!nodeBy(selected)) return;
+    state.links = state.links.filter(function (l) { return l.s !== selected && l.t !== selected; });
+    state.nodes = state.nodes.filter(function (n) { return n.id !== selected; });
+    snapshot(); select(null);
+  };
+  document.getElementById("nDup").onclick = function () {
+    const n = nodeBy(selected); if (!n) return;
+    const c = JSON.parse(JSON.stringify(n)); c.id = "n_" + Date.now(); c.x += 24; c.y += 24;
+    state.nodes.push(c); snapshot(); select(c.id);
+  };
+  document.getElementById("lDel").onclick = function () {
+    if (!linkBy(selected)) return;
+    state.links = state.links.filter(function (l) { return l.id !== selected; });
+    snapshot(); select(null);
+  };
+  function addNode() {
+    const r = svg.getBoundingClientRect();
+    const w = screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
+    const p = NODE_PRESET.process;
+    state.nodes.push({ id: "n_" + Date.now(), x: w.x - 80, y: w.y - 24, w: 160, h: 48, text: "新节点", subtext: "", shape: p.shape, fill: p.fill, stroke: p.stroke, tfill: p.text });
+    snapshot(); select(state.nodes[state.nodes.length - 1].id);
+  }
+  function toggleConnect() {
+    connectOn = !connectOn; connectSrc = null;
+    document.getElementById("btnConnect").classList.toggle("on", connectOn);
+    document.getElementById("fabConnect").classList.toggle("on", connectOn);
+    document.getElementById("btnConnect").textContent = connectOn ? "连接中" : "连接";
+    showHint(connectOn ? "依次点两个框图" : "连接关闭");
+  }
+  document.getElementById("btnAdd").onclick = addNode;
+  document.getElementById("fabAdd").onclick = addNode;
+  document.getElementById("btnConnect").onclick = toggleConnect;
+  document.getElementById("fabConnect").onclick = toggleConnect;
+  document.getElementById("btnUndo").onclick = undo;
+  document.getElementById("btnRedo").onclick = redo;
+  document.getElementById("btnSnap").onclick = function () { snap = !snap; this.classList.toggle("on", snap); showHint(snap ? "吸附开" : "吸附关"); };
+  document.getElementById("btnSnap").classList.add("on");
+  document.getElementById("btnPng").onclick = function () {
+    const clone = svg.cloneNode(true);
+    clone.setAttribute("width", "1600"); clone.setAttribute("height", "1000"); clone.setAttribute("viewBox", "0 0 1200 760");
+    const w = clone.querySelector("#world"); if (w) w.setAttribute("transform", "translate(20,20) scale(0.95)");
+    const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: "image/svg+xml;charset=utf-8" }));
+    const img = new Image();
+    img.onload = function () {
+      const c = document.createElement("canvas"); c.width = 1600; c.height = 1000;
+      const ctx = c.getContext("2d"); ctx.fillStyle = "#f7f3ea"; ctx.fillRect(0, 0, 1600, 1000); ctx.drawImage(img, 0, 0, 1600, 1000);
+      URL.revokeObjectURL(url);
+      c.toBlob(function (b) { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = (cur() && cur().name || "图") + ".png"; a.click(); });
+    };
+    img.src = url;
+  };
+  document.getElementById("btnExportDoc").onclick = function () {
+    const d = cur(); if (!d) return;
+    persist();
+    downloadJson({ nodes: d.nodes, links: d.links, name: d.name, notes: d.notes }, (d.name || "图") + ".json");
+  };
+  document.getElementById("btnExportBook").onclick = function () {
+    persist();
+    downloadJson(book, (book.title || "笔记本") + ".json");
+  };
+  function downloadJson(obj, name) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" }));
+    a.download = name; a.click();
+  }
+  document.getElementById("fileBook").onchange = function (e) {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = function () {
+      try {
+        const s = JSON.parse(r.result);
+        if (s.docs) book = s;
+        else if (s.nodes) { const d = newDoc(s.name || "导入"); d.nodes = s.nodes; d.links = s.links || []; d.notes = s.notes || ""; book.docs.push(d); }
+        else throw new Error("无法识别");
+        persist(); showHome();
+      } catch (err) { alert("导入失败：" + err.message); }
+    };
+    r.readAsText(f, "utf-8"); e.target.value = "";
+  };
+  document.getElementById("btnHtml").onclick = function () {
+    persist();
+    const raw = document.documentElement.outerHTML;
+    const baked = "window.__BAKED__ = " + JSON.stringify(book) + ";";
+    const out = "<!DOCTYPE html>\n" + raw.replace(/\/\*__BAKED_START\*\/[\s\S]*?\/\*__BAKED_END\*\//, "/*__BAKED_START*/\n" + baked + "\n/*__BAKED_END*/");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([out], { type: "text/html;charset=utf-8" }));
+    a.download = (book.title || "笔记本") + ".html"; a.click();
+  };
+
+  window.addEventListener("keydown", function (e) {
+    if (e.code === "Space") { space = true; }
+    const tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); }
+    if (e.key === "Delete" || e.key === "Backspace") {
+      if (nodeBy(selected)) document.getElementById("nDel").click();
+      else if (linkBy(selected)) document.getElementById("lDel").click();
+    }
+    if (e.key === "Escape") { connectOn = false; connectSrc = null; select(null); document.getElementById("btnConnect").classList.remove("on"); }
+  });
+  window.addEventListener("keyup", function (e) { if (e.code === "Space") space = false; });
+  inspector.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+
+  try {
+    if (!localStorage.getItem(KEY) && window.__BAKED__ && window.__BAKED__.docs) {
+      localStorage.setItem(KEY, JSON.stringify(book));
+    }
+  } catch (e) {}
+  renderHome();
+})();
+</script>
+</body>
+</html>

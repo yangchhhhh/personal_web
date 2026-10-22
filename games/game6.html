@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zen Flow · 流水白噪声</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000; /* 纯黑背景，极其省电，适合OLED屏幕 */
+            overflow: hidden;
+            touch-action: none; /* 完全接管触摸，防止任何滑动 */
+        }
+        canvas {
+            display: block;
+        }
+        /* 静音提示 — 极简，几乎隐形，仅在触摸前出现半透明提示 */
+        .hint {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: rgba(180, 220, 255, 0.3);
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+            letter-spacing: 2px;
+            pointer-events: none;
+            z-index: 10;
+            transition: opacity 1s;
+        }
+
+        /* 暂停菜单 */
+        #pause-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #pause-menu.show {
+            display: flex;
+        }
+        #pause-menu h2 {
+            color: #fff;
+            font-size: 48px;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #pause-menu button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 24px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #pause-menu button:hover {
+            background: #45a049;
+        }
+        #pause-menu .return-btn {
+            background: #2196F3;
+        }
+        #pause-menu .return-btn:hover {
+            background: #0b7dda;
+        }
+    </style>
+</head>
+<body>
+    <div class="hint" id="hint">☯ 触摸 · 流水潺潺 ☯</div>
+    <canvas id="canvas"></canvas>
+
+    <!-- 暂停菜单 -->
+    <div id="pause-menu">
+        <h2>游戏暂停</h2>
+        <button id="resume-btn">继续游戏</button>
+        <button id="return-btn" class="return-btn">返回画廊</button>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const hint = document.getElementById('hint');
+
+            let width, height;
+            let particles = [];
+            let mouse = { x: null, y: null };
+            let isTouching = false;
+            let isPaused = false;
+
+            // ---------- 音频相关变量 (流水白噪声) ----------
+            let audioCtx = null;
+            let noiseSource = null;
+            let gainNode = null;
+            let lowFilter = null;      // 低通滤波器 (让声音柔和)
+            let highFilter = null;      // 高通滤波器 (去除极低频隆隆声)
+            let isAudioInitialized = false; // 辅助标记，但直接用audioCtx判断也可
+
+            // 动态调色盘 (让人平静的冷色系过渡到温暖的紫红色)
+            let hue = 200;
+
+            // 调整画布尺寸
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // ---------- 音频初始化函数 (在第一次触摸时调用) ----------
+            function initAudio() {
+                // 防止重复初始化
+                if (audioCtx) return;
+
+                try {
+                    // 兼容iOS及其他浏览器
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContextClass) {
+                        console.log('浏览器不支持Web Audio API');
+                        return;
+                    }
+
+                    audioCtx = new AudioContextClass();
+
+                    // 创建滤波器: 低通 + 高通 塑造类似流水/风吹过的声音
+                    lowFilter = audioCtx.createBiquadFilter();
+                    lowFilter.type = 'lowpass';
+                    lowFilter.frequency.value = 680;      // 柔和的中高频衰减，模拟水流的温润
+                    lowFilter.Q.value = 0.7;
+
+                    highFilter = audioCtx.createBiquadFilter();
+                    highFilter.type = 'highpass';
+                    highFilter.frequency.value = 180;      // 滤除沉闷次声，留下清澈的流水感
+                    highFilter.Q.value = 0.5;
+
+                    // 增益节点 (控制音量)
+                    gainNode = audioCtx.createGain();
+                    gainNode.gain.value = 0.12;            // 适中的背景音量，不刺耳
+
+                    // 连接: 噪声源 → 低通 → 高通 → 增益 → 输出
+                    // 注意顺序: 先低通让高频滚降，再高通防止过低的嗡嗡声
+                    lowFilter.connect(highFilter);
+                    highFilter.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+
+                    // 创建2秒的立体声(单声道)噪声buffer，循环播放
+                    const bufferSize = 2 * audioCtx.sampleRate; // 2秒
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const channelData = buffer.getChannelData(0);
+
+                    // 填充白噪声 (之后由滤波器塑形)
+                    for (let i = 0; i < bufferSize; i++) {
+                        channelData[i] = Math.random() * 2 - 1;  // -1 .. 1
+                    }
+
+                    noiseSource = audioCtx.createBufferSource();
+                    noiseSource.buffer = buffer;
+                    noiseSource.loop = true;
+
+                    // 连接噪声源到滤波器链
+                    noiseSource.connect(lowFilter);
+
+                    // 开始播放 (此时audioCtx状态可能为suspended，但start可以提前调用)
+                    noiseSource.start(0);
+
+                    // 提示文字淡出
+                    if (hint) {
+                        hint.style.opacity = '0.2';
+                        setTimeout(() => { if(hint) hint.style.opacity = '0'; }, 2000);
+                    }
+
+                    // audioCtx 刚创建是 suspended 状态，必须在用户手势里 resume
+                    // resume 会在 ensureAudio 中执行
+                } catch (e) {
+                    console.warn('音频初始化失败:', e);
+                    // 即使失败也不影响粒子效果
+                }
+            }
+
+            // 确保音频已经启动并处于运行状态 (在触摸事件中调用)
+            function ensureAudio() {
+                if (!audioCtx) {
+                    initAudio();
+                }
+                // 如果audioCtx存在且被挂起，尝试恢复 (手势内允许)
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume().then(() => {
+                        // 可选: 微调音量或显示状态
+                    }).catch(e => console.warn('音频恢复失败:', e));
+                }
+            }
+
+            // ---------- 触摸/鼠标事件 ----------
+            function handleTouchStart(e) {
+                e.preventDefault(); // 阻止页面滚动/缩放
+                if (e.touches && e.touches[0]) {
+                    mouse.x = e.touches[0].clientX;
+                    mouse.y = e.touches[0].clientY;
+                    isTouching = true;
+                }
+                // 确保音频初始化并播放
+                ensureAudio();
+            }
+
+            function handleTouchMove(e) {
+                e.preventDefault();
+                if (e.touches && e.touches[0]) {
+                    mouse.x = e.touches[0].clientX;
+                    mouse.y = e.touches[0].clientY;
+                    isTouching = true;
+                }
+                // 每次移动也尝试激活音频 (以防某些设备锁止)
+                ensureAudio();
+            }
+
+            function handleTouchEnd(e) {
+                e.preventDefault();
+                isTouching = false;
+                // 注意: 我们不在触摸结束时停止音频，让流水持续
+            }
+
+            function handleMouseMove(e) {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+                isTouching = true;
+                // 鼠标移动也视为手势，启动音频 (适合桌面)
+                ensureAudio();
+            }
+
+            function handleMouseOut() {
+                isTouching = false;
+                // 不暂停音频
+            }
+
+            // 注册事件 (保留原有逻辑并扩展音频启动)
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseout', handleMouseOut);
+
+            window.addEventListener('touchstart', handleTouchStart, { passive: false });
+            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', handleTouchEnd, { passive: false });
+            window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+            // 粒子类 (保持不变，但更优雅)
+            class Particle {
+                constructor(x, y) {
+                    this.x = x;
+                    this.y = y;
+                    // 随机极坐标速度，创造爆炸散开的感觉
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 3 + 1;
+                    this.vx = Math.cos(angle) * speed;
+                    this.vy = Math.sin(angle) * speed;
+
+                    this.size = Math.random() * 2 + 1;
+                    this.color = `hsl(${hue}, 100%, 60%)`;
+                    this.life = 100; // 粒子的寿命
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // 缓慢减速 (阻尼)
+                    this.vx *= 0.95;
+                    this.vy *= 0.95;
+
+                    this.life -= 1.5; // 逐渐消散
+                }
+
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+            }
+
+            // 动画主循环
+            function animate() {
+                // 制造带有拖影的半透明背景 (经典的流动痕迹)
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, width, height);
+
+                // 如果正在触摸，不断生成新粒子
+                if (isTouching && mouse.x !== null) {
+                    for (let i = 0; i < 3; i++) {
+                        particles.push(new Particle(mouse.x, mouse.y));
+                    }
+                    hue += 0.5; // 触摸时颜色渐变
+                    if (hue > 360) hue = 0;
+                }
+
+                // 更新并绘制所有粒子
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
+                    particles[i].draw();
+
+                    // 绘制粒子之间的连线 (星象图效果)
+                    for (let j = i + 1; j < particles.length; j++) { // j从i+1开始，避免重复绘制同一条线
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const distance = Math.hypot(dx, dy);
+
+                        if (distance < 40) {
+                            ctx.beginPath();
+                            // 使用hsla，根据距离改变透明度
+                            const opacity = 1 - (distance / 40);
+                            ctx.strokeStyle = `hsla(${hue}, 80%, 70%, ${opacity})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+
+                    // 移除死亡的粒子
+                    if (particles[i].life <= 0) {
+                        particles.splice(i, 1);
+                        i--;
+                    }
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            // 启动动画
+            animate();
+
+            // 如果页面加载后没有任何触摸，但用户点击了提示区域? 其实触摸画布才会触发。加一个fallback: 点击canvas也可以初始化音频
+            canvas.addEventListener('click', function() {
+                // 桌面端点击也算手势
+                if (!audioCtx) {
+                    ensureAudio();
+                }
+            });
+
+            // 优雅地关闭音频当页面隐藏 (节省资源, 可选)
+            window.addEventListener('beforeunload', function() {
+                if (audioCtx && audioCtx.state !== 'closed') {
+                    audioCtx.close();
+                }
+            });
+
+            // ---------- 暂停菜单功能 ----------
+            const pauseMenu = document.getElementById('pause-menu');
+            const resumeBtn = document.getElementById('resume-btn');
+            const returnBtn = document.getElementById('return-btn');
+
+            function togglePause() {
+                isPaused = !isPaused;
+                if (isPaused) {
+                    pauseMenu.classList.add('show');
+                    // 暂停音频
+                    if (gainNode) {
+                        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                    }
+                } else {
+                    pauseMenu.classList.remove('show');
+                    // 恢复音频
+                    if (gainNode) {
+                        gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    }
+                }
+            }
+
+            function returnToGallery() {
+                // 优先使用父窗口的 backToGallery 函数（iframe 场景）
+                if (window.parent && window.parent.backToGallery) {
+                    window.parent.backToGallery();
+                } else if (window.parent && window.parent.location) {
+                    window.parent.location.href = 'index.html';
+                } else if (window.top && window.top.location) {
+                    window.top.location.href = 'index.html';
+                } else {
+                    window.location.href = 'index.html';
+                }
+            }
+
+            // ESC 键监听
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    togglePause();
+                }
+            });
+
+            // 按钮事件
+            resumeBtn.addEventListener('click', togglePause);
+            returnBtn.addEventListener('click', returnToGallery);
+
+            // 提示文字在第一次触摸后会消失，但如果没有触摸，它一直可见
+        })();
+    </script>
+
+<!-- 暂停菜单 -->
+<div id="pauseMenu" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 30;">
+    <div style="background: #222; border: 2px solid #555; border-radius: 10px; padding: 40px; width: 300px; text-align: center; color: white; box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);">
+        <h1>游戏暂停</h1>
+        <button onclick="resumeGame()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #4caf50; color: white; border: none; border-radius: 5px; margin: 10px;">继续游戏</button><br>
+        <button onclick="returnToGallery()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #2196f3; color: white; border: none; border-radius: 5px; margin: 10px;">返回游戏库</button><br>
+        <button onclick="toggleFullScreen()" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #ff9800; color: white; border: none; border-radius: 5px; margin: 10px;">全屏模式</button>
+    </div>
+</div>
+
+<script>
+    let isPaused = false;
+
+    function stopGame() {
+        isPaused = true;
+    }
+
+    function returnToGallery() {
+        stopGame();
+        try {
+            if (window.parent && window.parent !== window && typeof window.parent.backToGallery === 'function') {
+                window.parent.backToGallery();
+                return;
+            }
+        } catch (err) {
+            console.warn('无法调用 parent.backToGallery：', err);
+        }
+        try {
+            if (window.top && window.top !== window) {
+                window.top.location.href = 'index.html#game';
+                return;
+            }
+        } catch (err) {
+            console.warn('无法调用 top.location：', err);
+        }
+        window.location.href = 'index.html#game';
+    }
+
+    function resumeGame() {
+        isPaused = false;
+        document.getElementById('pauseMenu').style.display = 'none';
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    // 添加 ESC 键监听
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            isPaused = !isPaused;
+            document.getElementById('pauseMenu').style.display = isPaused ? 'flex' : 'none';
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="day">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>YangChen · 终端矩阵 | 个人网页</title>
+    <script>try{var _t=localStorage.getItem('yc-theme');if(_t==='night'||_t==='day')document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
     <script src="https://fastly.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
     <script src="https://fastly.jsdelivr.net/npm/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
     <style>
@@ -997,6 +998,189 @@
             border: none;
             border-radius: 1rem;
         }
+
+        /* ---------- 昼夜主题 & 像素鱼塘 ---------- */
+        html[data-theme="day"] body { background-color: #87c4d4; color: #3d2b1f; }
+        html[data-theme="night"] body { background-color: #0d1117; color: #17f700; }
+        html[data-theme="day"] .bg-scroll-container svg text { stroke: #8b5a2b; }
+        html[data-theme="day"] .profile-section {
+            background: rgba(255, 246, 220, 0.92);
+            border: 4px solid #5a3a1a;
+            box-shadow: 8px 8px 0 #3d2b1f;
+        }
+        html[data-theme="day"] .profile-section h1 { color: #3d2b1f !important; }
+        html[data-theme="day"] .info-text { color: #3d2b1f; }
+        html[data-theme="day"] .info-text span { color: #b45309; }
+        html[data-theme="day"] .profile-img { border-color: #c45c2c; }
+        html[data-theme="day"] #page-main > .content-wrapper > h2 { color: #3d2b1f; }
+        html[data-theme="day"] .message-section { border-top-color: #c4a574; }
+        html[data-theme="day"] .message-form {
+            background: rgba(255,246,220,0.92);
+            border: 4px solid #5a3a1a;
+            color: #3d2b1f;
+        }
+        html[data-theme="day"] .message-form input,
+        html[data-theme="day"] .message-form textarea {
+            background: #fff8e8;
+            border-color: #5a3a1a;
+            color: #3d2b1f;
+        }
+        html[data-theme="day"] .message-form button { background: #c45c2c; color: #fff8e8; }
+        html[data-theme="day"] #floatingMessagesArea { border-color: #5a3a1a; background: rgba(255,255,255,0.25); }
+        html[data-theme="day"] .global-back { background: #c45c2c; color: #fff8e8; box-shadow: 4px 4px 0 #3d2b1f; }
+        html[data-theme="night"] .global-back { background: #17f700; color: #0d1117; }
+
+        .theme-toggle {
+            position: fixed;
+            top: 1.2rem;
+            right: 1.2rem;
+            z-index: 5000;
+            width: 52px;
+            height: 52px;
+            border: 4px solid #3d2b1f;
+            image-rendering: pixelated;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: 4px 4px 0 #1a120c;
+        }
+        html[data-theme="day"] .theme-toggle { background: #f4d35e; }
+        html[data-theme="night"] .theme-toggle { background: #1e3a5f; color: #f4d35e; border-color: #f4d35e; }
+
+        .poker-section { height: auto; min-height: 42vh; margin-bottom: 3rem; }
+        .poker-container { width: min(92vw, 56rem); height: 28rem; }
+
+        .pond-scene {
+            width: min(96vw, 1100px);
+            margin: 0 auto 4rem;
+            border: 4px solid #3d2b1f;
+            box-shadow: 8px 8px 0 rgba(0,0,0,.25);
+            image-rendering: pixelated;
+            overflow: hidden;
+            position: relative;
+        }
+        .pond-sky {
+            position: relative;
+            height: 120px;
+            overflow: hidden;
+        }
+        html[data-theme="day"] .pond-sky { background: linear-gradient(#7ec8e3 0 70%, #b7e4f4 70% 100%); }
+        html[data-theme="night"] .pond-sky { background: linear-gradient(#0b1d36 0 72%, #16324d 72% 100%); }
+        .pixel-sun, .pixel-moon {
+            position: absolute;
+            top: 16px;
+            right: 36px;
+            width: 36px;
+            height: 36px;
+            image-rendering: pixelated;
+        }
+        .pixel-sun {
+            background: #ffd23f;
+            box-shadow: 0 -10px 0 2px #ffd23f, 0 10px 0 2px #ffd23f, 10px 0 0 2px #ffd23f, -10px 0 0 2px #ffd23f;
+        }
+        .pixel-moon {
+            background: #f1f5f9;
+            border-radius: 0;
+            box-shadow: 8px 0 0 #0b1d36 inset;
+        }
+        html[data-theme="day"] .pixel-moon { display: none; }
+        html[data-theme="night"] .pixel-sun { display: none; }
+        .stars {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(#fff 1.5px, transparent 1.5px);
+            background-size: 28px 22px;
+            opacity: 0;
+        }
+        html[data-theme="night"] .stars { opacity: .85; }
+        .cloud {
+            position: absolute;
+            height: 18px;
+            background: #fff;
+            box-shadow: 12px 0 0 #fff, 24px 0 0 #fff, 8px -8px 0 #fff, 20px -8px 0 #fff;
+            animation: cloud-drift 28s linear infinite;
+            image-rendering: pixelated;
+        }
+        html[data-theme="night"] .cloud { background: #4b5d78; box-shadow: 12px 0 0 #4b5d78, 24px 0 0 #4b5d78, 8px -8px 0 #4b5d78, 20px -8px 0 #4b5d78; }
+        .cloud.c1 { top: 28px; left: -40px; animation-duration: 32s; }
+        .cloud.c2 { top: 58px; left: 20%; animation-duration: 40s; animation-delay: -12s; }
+        .cloud.c3 { top: 22px; left: 55%; animation-duration: 36s; animation-delay: -20s; }
+        @keyframes cloud-drift { from { transform: translateX(0); } to { transform: translateX(110vw); } }
+        .wheat {
+            height: 52px;
+            background: repeating-linear-gradient(90deg, #d4a017 0 6px, #f0c94a 6px 10px, #b8860b 10px 14px);
+            animation: wheat-wave 1.6s steps(4) infinite;
+        }
+        html[data-theme="night"] .wheat {
+            background: repeating-linear-gradient(90deg, #6b4f12 0 6px, #8a6a1c 6px 10px, #4a360c 10px 14px);
+        }
+        @keyframes wheat-wave { 0% { background-position: 0 0; } 100% { background-position: 14px 0; } }
+        .pond-water {
+            position: relative;
+            height: min(52vh, 420px);
+            min-height: 280px;
+            background: repeating-linear-gradient(0deg, #3aa0b8 0 8px, #4eb8c9 8px 16px);
+        }
+        html[data-theme="night"] .pond-water {
+            background: repeating-linear-gradient(0deg, #164e63 0 8px, #1b6b7a 8px 16px);
+        }
+        .lily {
+            position: absolute;
+            width: 28px;
+            height: 14px;
+            background: #3f7d3a;
+            box-shadow: 10px 0 0 #2f5e2c;
+            pointer-events: none;
+        }
+        html[data-theme="night"] .lily { background: #24522a; box-shadow: 10px 0 0 #1a3d1e; }
+        .koi {
+            position: absolute;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            padding: 0;
+            transform-origin: center;
+            z-index: 2;
+        }
+        .koi svg { width: 72px; height: 36px; display: block; image-rendering: pixelated; }
+        .koi b {
+            display: block;
+            margin-top: 4px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-shadow: 1px 1px 0 #fff8e8, -1px 1px 0 #fff8e8, 1px -1px 0 #fff8e8, -1px -1px 0 #fff8e8;
+            color: #1a120c;
+            white-space: nowrap;
+        }
+        html[data-theme="night"] .koi b { text-shadow: 1px 1px 0 #0b1d36, -1px 1px 0 #0b1d36, 1px -1px 0 #0b1d36, -1px -1px 0 #0b1d36; color: #fff; }
+        .pond-caption {
+            position: absolute;
+            left: 8px;
+            bottom: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #fff8e8;
+            color: #3d2b1f;
+            padding: 3px 6px;
+            border: 2px solid #3d2b1f;
+            pointer-events: none;
+        }
+        html[data-theme="night"] .pond-caption { background: #0b1d36; color: #f4d35e; border-color: #f4d35e; }
+        #zoomMask {
+            position: fixed;
+            inset: 0;
+            z-index: 90000;
+            pointer-events: none;
+            clip-path: circle(0px at 50% 50%);
+        }
+        @media (max-width: 800px) {
+            .poker-container { height: 22rem; }
+            .poker { width: 14rem; height: 20rem; }
+            .poker h2 { font-size: 1.8rem; }
+            .pond-water { height: 360px; }
+            .koi svg { width: 56px; height: 28px; }
+            .koi b { font-size: 11px; }
+        }
     </style>
 </head>
 <body>
@@ -1005,7 +1189,9 @@
     <svg viewBox='0 0 50 50'><circle r='25' cx='25' cy='25'></circle></svg>
     <p>LOADING</p>
 </div>
-<div class="global-back hide" id="globalBackBtn">← BACK_TO_TERMINAL</div>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="切换昼夜">☀</button>
+<div class="global-back hide" id="globalBackBtn">← 回首页</div>
+<div id="zoomMask"></div>
 
 <!-- ========================= 页面1: MAIN ========================= -->
 <div id="page-main" class="page active">
@@ -1024,18 +1210,32 @@
         <h2 style="font-size: 3rem; margin-bottom: 5rem; z-index: 2; text-transform: uppercase;">_COMMAND_CENTER_</h2>
         <div class="poker-section">
             <div class="poker-container" id="pokerDeck">
-                <div class="poker" data-page="relax" style="background:#4A90E2;"><h2 style="color:#fff">解压时刻</h2></div>
+                <div class="poker" data-page="game" style="background:#17f700;"><h2 style="color:#0d1117">个人游戏</h2></div>
+                <div class="poker" data-page="notebook" data-href="tools/notebook.html" style="background:#1a365d;"><h2 style="color:#fff">流程图笔记本</h2></div>
+                <div class="poker" data-page="memory" style="background:#ffb347;"><h2 style="color:#4a2a1a">温馨回忆</h2></div>
                 <div class="poker" data-page="projects" style="background:#F5A623;"><h2 style="color:#0d1117">项目经历</h2></div>
                 <div class="poker" data-page="contact" style="background:#D0021B;"><h2 style="color:#fff">联系方式</h2></div>
-                <div class="poker" data-page="finance" style="background:#10b981;"><h2 style="color:#fff">量化投资</h2></div>
-                <div class="poker" data-page="game" style="background:#17f700;"><h2 style="color:#0d1117">个人游戏</h2></div>
-                <div class="poker" data-page="memory" style="background:#ffb347;"><h2 style="color:#4a2a1a">温馨回忆录</h2></div>
-                <div class="poker" data-page="expected" style="background:#6c5ce7;"><h2 style="color:#fff">预期校准器</h2></div>
-                <div class="poker" data-page="traffic" style="background:#f97316;"><h2 style="color:#fff">🚦 智能编队</h2></div>
-                <div class="poker" data-page="spree" style="background:#d3e90b;"><h2 style="color:#fff">挥霍模拟器</h2></div>
                 <div class="poker_top" id="pokerTopClick"></div>
             </div>
             <button class="enter-btn" id="enterCommandBtn">执行指令 : 个人游戏</button>
+        </div>
+
+        <div class="pond-scene" id="pondScene">
+            <div class="pond-sky">
+                <div class="stars"></div>
+                <div class="pixel-sun" aria-hidden="true"></div>
+                <div class="pixel-moon" aria-hidden="true"></div>
+                <div class="cloud c1"></div>
+                <div class="cloud c2"></div>
+                <div class="cloud c3"></div>
+            </div>
+            <div class="wheat" aria-hidden="true"></div>
+            <div class="pond-water" id="pondWater">
+                <div class="lily" style="left:8%;top:22%"></div>
+                <div class="lily" style="left:72%;top:18%"></div>
+                <div class="lily" style="left:40%;top:70%"></div>
+                <span class="pond-caption">点一条鱼 · 钓进对应页面</span>
+            </div>
         </div>
 
         <div class="message-section">
@@ -1056,16 +1256,16 @@
     <div class="game-photos-container" id="gamePhotosContainer">
         <div class="infinite-photos" id="gameInfiniteContainer">
             <div class="photos_line">
-                <a href="game1.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game1.png" alt="Cyber Hacker"></div><h3 class="game-title">Cyber Hacker</h3><p class="game-sub">左键攻击，右键行走，能双段跳，按Y切换一三人称。想体验佩恩的建议进游戏按R</p></div><div class="back"><h3>Cyber Hacker</h3><p>在这个赛博朋克风格的解谜游戏中，你将扮演黑客入侵终端系统，解开层层谜题。支持多结局，沉浸式体验。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
-                <a href="game2.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game2.png" alt="Cyberpunk Quest"></div><h3 class="game-title">Cyberpunk Quest</h3><p class="game-sub">VR RPG / 开放世界</p></div><div class="back"><h3>Cyberpunk Quest</h3><p>开放世界RPG，探索未来都市，与AI互动，自由选择职业路线，体验沉浸式剧情。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
-                <a href="game3.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game3.png" alt="Unreal Shooter"></div><h3 class="game-title">Unreal Shooter</h3><p class="game-sub">高画质FPS · 赛博对战</p></div><div class="back"><h3>Unreal Shooter</h3><p>快节奏第一人称射击游戏，支持多人联机，多种武器与技能组合，极致画面表现。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
-                <a href="game4.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game4.png" alt="Mobile Puzzle"></div><h3 class="game-title">Mobile Puzzle</h3><p class="game-sub">休闲益智 · 碎片时间</p></div><div class="back"><h3>Mobile Puzzle</h3><p>轻松有趣的益智解谜，适合碎片时间，关卡丰富，锻炼大脑。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
+                <a href="games/game1.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game1.png" alt="Cyber Hacker"></div><h3 class="game-title">Cyber Hacker</h3><p class="game-sub">左键攻击，右键行走，能双段跳，按Y切换一三人称。想体验佩恩的建议进游戏按R</p></div><div class="back"><h3>Cyber Hacker</h3><p>在这个赛博朋克风格的解谜游戏中，你将扮演黑客入侵终端系统，解开层层谜题。支持多结局，沉浸式体验。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
+                <a href="games/game2.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game2.png" alt="Cyberpunk Quest"></div><h3 class="game-title">Cyberpunk Quest</h3><p class="game-sub">VR RPG / 开放世界</p></div><div class="back"><h3>Cyberpunk Quest</h3><p>开放世界RPG，探索未来都市，与AI互动，自由选择职业路线，体验沉浸式剧情。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
+                <a href="games/game3.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game3.png" alt="Unreal Shooter"></div><h3 class="game-title">Unreal Shooter</h3><p class="game-sub">高画质FPS · 赛博对战</p></div><div class="back"><h3>Unreal Shooter</h3><p>快节奏第一人称射击游戏，支持多人联机，多种武器与技能组合，极致画面表现。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
+                <a href="games/game4.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game4.png" alt="Mobile Puzzle"></div><h3 class="game-title">Mobile Puzzle</h3><p class="game-sub">休闲益智 · 碎片时间</p></div><div class="back"><h3>Mobile Puzzle</h3><p>轻松有趣的益智解谜，适合碎片时间，关卡丰富，锻炼大脑。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
             </div>
             <div class="photos_line">
-                <a href="game5.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game5.png" alt="Neon Drift"></div><h3 class="game-title">Neon Drift</h3><p class="game-sub">竞速狂飙 · 光污染美学</p></div><div class="back"><h3>Neon Drift</h3><p>赛博朋克风格竞速游戏，霓虹灯赛道，极速漂移，支持改装车辆。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
-                <a href="game6.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game6.png" alt="Retro Platformer"></div><h3 class="game-title">Retro Platformer</h3><p class="game-sub">独立像素 · 硬核跳跃</p></div><div class="back"><h3>Retro Platformer</h3><p>复古像素风平台跳跃，高难度挑战，隐藏关卡，致敬经典。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
-                <a href="game7.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game7.png" alt="Matrix Breaker"></div><h3 class="game-title">Matrix Breaker</h3><p class="game-sub">打砖块 · 赛博朋克</p></div><div class="back"><h3>Matrix Breaker</h3><p>经典打砖块玩法，加入矩阵特效，技能系统，爽快打击感。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
-                <a href="game8.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game8.png" alt="Matrix Breaker"></div><h3 class="game-title">Matrix Breaker</h3><p class="game-sub">打砖块 · 赛博朋克</p></div><div class="back"><h3>Matrix Breaker</h3></div></div></a>
+                <a href="games/game5.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game5.png" alt="Neon Drift"></div><h3 class="game-title">Neon Drift</h3><p class="game-sub">竞速狂飙 · 光污染美学</p></div><div class="back"><h3>Neon Drift</h3><p>赛博朋克风格竞速游戏，霓虹灯赛道，极速漂移，支持改装车辆。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
+                <a href="games/game6.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game6.png" alt="Retro Platformer"></div><h3 class="game-title">Retro Platformer</h3><p class="game-sub">独立像素 · 硬核跳跃</p></div><div class="back"><h3>Retro Platformer</h3><p>复古像素风平台跳跃，高难度挑战，隐藏关卡，致敬经典。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
+                <a href="games/game7.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game7.png" alt="Matrix Breaker"></div><h3 class="game-title">Matrix Breaker</h3><p class="game-sub">打砖块 · 赛博朋克</p></div><div class="back"><h3>Matrix Breaker</h3><p>经典打砖块玩法，加入矩阵特效，技能系统，爽快打击感。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
+                <a href="games/game8.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game8.png" alt="Matrix Breaker"></div><h3 class="game-title">Matrix Breaker</h3><p class="game-sub">打砖块 · 赛博朋克</p></div><div class="back"><h3>Matrix Breaker</h3></div></div></a>
             </div>
         </div>
     </div>
@@ -1086,7 +1286,6 @@
             <div class="contact-item"><span>QQ Identifier:</span> <span>[2431039560]</span></div>
             <div class="contact-item"><span>WeChat:</span> <span>[I_deserve_1t]</span></div>
             <div class="contact-item"><span>Bilibili Channel:</span> <span>[便终身无个进步]</span></div>
-            <div class="contact-item"><span>Phone/SMS:</span> <span>[18213577341]</span></div>
             <div class="contact-item" style="border:none;"><span>Email Address:</span> <span>chenvipblue@foxmail.com</span></div>
         </div>
         
@@ -1152,7 +1351,7 @@
     </div>
 
     <div id="trafficIframeContainer">
-        <iframe src="traffic_bot.html"></iframe>
+        <iframe src="tools/traffic_bot.html"></iframe>
     </div>
 </div>
 
@@ -1165,7 +1364,7 @@
 
 <!-- ========================= 页面6: FINANCE ========================= -->
 <div id="page-finance" class="page">
-    <iframe src="Investment and Finance Management & Money Planning.html" style="width:100%; height:100vh; border:none;"></iframe>
+    <iframe src="tools/finance.html" style="width:100%; height:100vh; border:none;"></iframe>
 </div>
 
 <!-- ========================= 回忆录页面 memory ========================= -->
@@ -1279,7 +1478,7 @@
 
 <!-- ===== 页面8: 挥霍模拟器 ===== -->
 <div id="page-spree" class="page">
-    <iframe src="spree.html" style="width:100%; height:100vh; border:none; display:block;"></iframe>
+    <iframe src="tools/spree.html" style="width:100%; height:100vh; border:none; display:block;"></iframe>
 </div>
 
 <script>
@@ -1674,15 +1873,11 @@
     const pokerDeck = document.getElementById('pokerDeck');
     let pokers = [...pokerDeck.querySelectorAll('.poker:not(.poker_top)')];
     const transforms = [
-        "rotate(-14deg) translate(0%, 0%)",
-        "rotate(-10deg) translate(25%, -5%)",
-        "rotate(-6deg) translate(48%, -10%)",
-        "rotate(-2deg) translate(70%, -15%)",
-        "rotate(2deg) translate(92%, -20%)",
-        "rotate(6deg) translate(114%, -25%)",
-        "rotate(10deg) translate(136%, -30%)",
-        "rotate(14deg) translate(158%, -35%)",
-        "rotate(18deg) translate(180%, -40%)"
+        "rotate(-10deg) translate(0%, 0%)",
+        "rotate(-5deg) translate(28%, -8%)",
+        "rotate(0deg) translate(56%, -14%)",
+        "rotate(5deg) translate(84%, -20%)",
+        "rotate(10deg) translate(112%, -26%)"
     ];
     function updatePokerUI() {
         const bottomCard = pokers.pop();
@@ -1700,6 +1895,8 @@
     function cyclePoker() { updatePokerUI(); }
     function executePoker() {
         const topCard = pokers[0];
+        const href = topCard.getAttribute('data-href');
+        if (href) { location.href = href; return; }
         const pageId = topCard.getAttribute('data-page');
         if (pageId === 'traffic') {
             window._showTrafficOnLoad = true;
@@ -1713,6 +1910,93 @@
     document.getElementById('globalBackBtn')?.addEventListener('click', goBackHome);
     document.getElementById('backToGalleryBtn')?.addEventListener('click', window.backToGallery);
     updatePokerUI();
+
+    function currentTheme() {
+        return document.documentElement.getAttribute('data-theme') === 'night' ? 'night' : 'day';
+    }
+    function applyTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        try { localStorage.setItem('yc-theme', t); } catch (e) {}
+        const btn = document.getElementById('themeToggle');
+        if (btn) btn.textContent = t === 'day' ? '☾' : '☀';
+    }
+    applyTheme(currentTheme());
+    document.getElementById('themeToggle')?.addEventListener('click', function () {
+        applyTheme(currentTheme() === 'day' ? 'night' : 'day');
+    });
+
+    function goDest(pageId) {
+        if (pageId === 'traffic') {
+            window._showTrafficOnLoad = true;
+            switchToPage('projects');
+        } else if (pageId) {
+            switchToPage(pageId);
+        }
+    }
+    function fishZoomThenGo(el, pageId, color) {
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduce) { goDest(pageId); return; }
+        const r = el.getBoundingClientRect();
+        const x = r.left + r.width / 2;
+        const y = r.top + r.height / 2;
+        const mask = document.getElementById('zoomMask');
+        mask.style.background = color;
+        mask.style.transition = 'none';
+        mask.style.clipPath = 'circle(0px at ' + x + 'px ' + y + 'px)';
+        requestAnimationFrame(function () {
+            mask.style.transition = 'clip-path 0.45s ease-out';
+            mask.style.clipPath = 'circle(150vmax at ' + x + 'px ' + y + 'px)';
+            setTimeout(function () {
+                goDest(pageId);
+                mask.style.transition = 'clip-path 0.35s ease-in';
+                mask.style.clipPath = 'circle(0px at ' + x + 'px ' + y + 'px)';
+            }, 520);
+        });
+    }
+
+    (function initPond() {
+        const water = document.getElementById('pondWater');
+        if (!water) return;
+        const fishes = [
+            { page: 'relax', name: '解压时刻', color: '#4A90E2' },
+            { page: 'finance', name: '量化投资', color: '#10b981' },
+            { page: 'expected', name: '预期校准器', color: '#c9a227' },
+            { page: 'traffic', name: '智能编队', color: '#f97316' },
+            { page: 'spree', name: '挥霍模拟器', color: '#e8d44d' }
+        ];
+        const states = [];
+        fishes.forEach(function (f, i) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'koi';
+            btn.setAttribute('aria-label', f.name);
+            btn.innerHTML = '<svg viewBox="0 0 16 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="2" y="2" width="9" height="4" fill="' + f.color + '"/><rect x="11" y="1" width="2" height="6" fill="' + f.color + '"/><rect x="13" y="2" width="2" height="4" fill="' + f.color + '"/><rect x="3" y="3" width="1" height="1" fill="#111"/></svg><b>' + f.name + '</b>';
+            water.appendChild(btn);
+            const st = {
+                el: btn,
+                x: 8 + i * 18,
+                y: 18 + (i % 3) * 24,
+                vx: (i % 2 ? 1 : -1) * (0.12 + i * 0.03),
+                vy: 0.08 * (i % 2 ? 1 : -1)
+            };
+            states.push(st);
+            btn.addEventListener('click', function () { fishZoomThenGo(btn, f.page, f.color); });
+        });
+        function tick() {
+            const w = water.clientWidth, h = water.clientHeight;
+            states.forEach(function (s) {
+                s.x += s.vx; s.y += s.vy;
+                if (s.x < 2 || s.x > 82) s.vx *= -1;
+                if (s.y < 6 || s.y > 72) s.vy *= -1;
+                s.el.style.left = s.x + '%';
+                s.el.style.top = s.y + '%';
+                const svg = s.el.querySelector('svg');
+                if (svg) svg.style.transform = 'scaleX(' + (s.vx < 0 ? -1 : 1) + ')';
+            });
+            requestAnimationFrame(tick);
+        }
+        tick();
+    })();
 
     // Lenis
     globalLenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });

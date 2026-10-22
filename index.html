@@ -1013,6 +1013,14 @@
         html[data-theme="day"] .info-text span { color: #b45309; }
         html[data-theme="day"] .profile-img { border-color: #c45c2c; }
         html[data-theme="day"] #page-main > .content-wrapper > h2 { color: #3d2b1f; }
+        html[data-theme="day"] .message-section h2 { color: #3d2b1f !important; }
+        html[data-theme="day"] .floating-message { color: #3d2b1f; background: rgba(255,246,220,.92); border-color: #5a3a1a; }
+        html[data-theme="day"] .floating-message span { color: #b45309; }
+        #page-projects, #page-contact { background: #0d1117; min-height: 100vh; }
+        html[data-theme="day"] #page-contact .contact-wrapper > h1,
+        html[data-theme="day"] #page-contact .contact-wrapper > .message-form > h2,
+        html[data-theme="day"] #page-contact .messages-list > h2 { color: #e8f5c8 !important; }
+        .theme-toggle.hide { display: none; }
         html[data-theme="day"] .message-section { border-top-color: #c4a574; }
         html[data-theme="day"] .message-form {
             background: rgba(255,246,220,0.92);
@@ -1265,7 +1273,8 @@
                 <a href="games/game5.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game5.png" alt="Neon Drift"></div><h3 class="game-title">Neon Drift</h3><p class="game-sub">竞速狂飙 · 光污染美学</p></div><div class="back"><h3>Neon Drift</h3><p>赛博朋克风格竞速游戏，霓虹灯赛道，极速漂移，支持改装车辆。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
                 <a href="games/game6.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game6.png" alt="Retro Platformer"></div><h3 class="game-title">Retro Platformer</h3><p class="game-sub">独立像素 · 硬核跳跃</p></div><div class="back"><h3>Retro Platformer</h3><p>复古像素风平台跳跃，高难度挑战，隐藏关卡，致敬经典。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
                 <a href="games/game7.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game7.png" alt="Matrix Breaker"></div><h3 class="game-title">Matrix Breaker</h3><p class="game-sub">打砖块 · 赛博朋克</p></div><div class="back"><h3>Matrix Breaker</h3><p>经典打砖块玩法，加入矩阵特效，技能系统，爽快打击感。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
-                <a href="games/game8.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game8.png" alt="Matrix Breaker"></div><h3 class="game-title">Matrix Breaker</h3><p class="game-sub">打砖块 · 赛博朋克</p></div><div class="back"><h3>Matrix Breaker</h3></div></div></a>
+                <a href="games/game8.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game8.png" alt="Matrix Breaker"></div><h3 class="game-title">Matrix Breaker</h3><p class="game-sub">打砖块 · 赛博朋克</p></div><div class="back"><h3>Matrix Breaker</h3><p>经典打砖块玩法，加入矩阵特效，技能系统，爽快打击感。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
+                <a href="games/game9.html" class="photo-item"><div class="inner"><div class="front"><div class="front-img"><img src="images/game9.svg" alt="Night Downhill"></div><h3 class="game-title">Night Downhill</h3><p class="game-sub">秋名山夜跑 · 电脑高画质 / 手机按键陀螺仪</p></div><div class="back"><h3>Night Downhill</h3><p>夜间下山计时赛。电脑 WASD，手机屏幕键或陀螺仪。眼镜第 10 页可玩简化版；手柄页可单独打开。</p><p class="click-tip">点击即可游玩 →</p></div></div></a>
             </div>
         </div>
     </div>
@@ -1336,7 +1345,6 @@
 
 <!-- ========================= 页面4: PROJECTS ========================= -->
 <div id="page-projects" class="page">
-    <h1 style="text-align:center; font-size:5rem; color:#fff; padding-top:8vh;">temporal_logs</h1>
     <div class="timeline-container" id="timelineRoot">
         <div class="timeline-line"></div>
     </div>
@@ -1344,7 +1352,6 @@
     <!-- 项目卡片（潮汐车道机器人） -->
     <div id="projectCardContainer">
         <div id="projectCard">
-            <img src="images/traffic_thumb.png" alt="潮汐车道机器人" style="width:100%; max-width:300px; border-radius:1rem; border:1px solid #17f700;">
             <h3 style="color:#17f700; margin-top:1rem;">🚦 潮汐车道 · 智能编队调度系统</h3>
             <p style="color:#ccc; font-size:0.9rem;">点击进入交互仿真</p>
         </div>
@@ -1540,6 +1547,8 @@
             if (pages[pageId]) pages[pageId].classList.add('active');
             currentPage = pageId;
             document.getElementById('globalBackBtn').classList.toggle('hide', pageId === 'main');
+            const themeBtn = document.getElementById('themeToggle');
+            if (themeBtn) themeBtn.classList.toggle('hide', pageId !== 'main');
             if (pageId === 'game') {
                 if (typeof reinitGamePage === 'function') reinitGamePage();
                 const photosContainer = document.getElementById('gamePhotosContainer');

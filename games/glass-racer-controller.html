@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>T-Glass 夜跑手柄</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#070b16;color:#fff;font-family:sans-serif;user-select:none;overflow:hidden}
+  .wrap{height:100%;display:flex;flex-direction:column;padding:12px 14px calc(16px + env(safe-area-inset-bottom))}
+  h1{margin:0;font-size:18px;color:#ffcc00}
+  .sub{color:#8a93a6;font-size:12px;margin:4px 0 10px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+  .bar button{
+    background:#182033;color:#eee;border:1px solid #445;border-radius:8px;padding:8px 12px;font-size:13px
+  }
+  .bar button.on{background:#ffcc00;color:#111;font-weight:700}
+  label.sl{font-size:12px;color:#9ab;display:flex;align-items:center;gap:8px;width:100%}
+  input[type=range]{flex:1}
+  #st{font-size:12px;color:#9ab;min-height:16px}
+  .hud{display:flex;justify-content:space-between;margin:6px 0 10px;color:#ffcc00;font-family:monospace}
+  .pads{flex:1;display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+  .col{display:flex;flex-direction:column;gap:12px}
+  .col.row{flex-direction:row;align-items:flex-end}
+  .pad{
+    width:86px;height:86px;border-radius:18px;border:1px solid rgba(255,204,0,.45);
+    background:rgba(20,28,48,.85);color:#fff;font-size:22px;font-weight:800
+  }
+  .pad.wide{width:120px;height:70px;font-size:16px}
+  .pad.held{background:#ffcc00;color:#111}
+  #gyrohint{display:none;color:#7ecbff;font-size:13px;text-align:center;flex:1;padding-bottom:40px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>NIGHT DOWNHILL · 眼镜手柄</h1>
+  <p class="sub">连热点 YC-GLASS 后打开 · 眼镜第 10 页 · 短按切页、走路自动加油</p>
+  <div class="bar">
+    <button id="m-wifi" class="on">WiFi 热点</button>
+    <button id="m-ble">蓝牙 BLE</button>
+    <button id="ble-btn">连接蓝牙</button>
+  </div>
+  <div class="bar">
+    <button id="c-btn" class="on">屏幕按键</button>
+    <button id="c-gyro">手机陀螺仪</button>
+    <button id="g-imu">眼镜 IMU 关</button>
+  </div>
+  <div class="bar">
+    <button id="cam0" class="on">第一人称</button>
+    <button id="cam1">第三人称</button>
+  </div>
+  <div class="bar">
+    <label class="sl">转向灵敏度 <span id="sensv">40%</span>
+      <input id="sens" type="range" min="20" max="100" value="40">
+    </label>
+  </div>
+  <div id="st">未连接控制通道</div>
+  <div class="hud"><span id="send">s 0  t 0  b 0</span><span id="host">192.168.4.1</span></div>
+  <div class="pads">
+    <div class="col row" id="steer-pads">
+      <button class="pad" data-k="left">◀</button>
+      <button class="pad" data-k="right">▶</button>
+    </div>
+    <div id="gyrohint">左右轻倾转向<br>灵敏度为低，防晕车</div>
+    <div class="col">
+      <button class="pad wide" data-k="brake">刹车</button>
+      <button class="pad wide" data-k="gas">油门</button>
+    </div>
+  </div>
+</div>
+<script>
+const SERVICE = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+const CHAR = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+const host = (location.protocol === 'http:' && location.hostname !== 'localhost')
+  ? location.hostname : '192.168.4.1';
+document.getElementById('host').textContent = host;
+
+let mode = 'wifi';
+let ctrl = 'buttons';
+let bleChar = null, bleOk = false;
+let steer = 0, throttle = 0, brake = 0;
+let held = {left:false,right:false,gas:false,brake:false};
+let gyroOn = false, gyroZero = 0, gyroSteer = 0;
+let glassImu = false;
+let cam = 0;
+let sens = 0.4;
+
+const st = document.getElementById('st');
+function setOn(id, on){ document.getElementById(id).classList.toggle('on', on); }
+document.getElementById('m-wifi').onclick = () => { mode = 'wifi'; setOn('m-wifi', true); setOn('m-ble', false); st.textContent = 'WiFi：向眼镜热点发控制'; };
+document.getElementById('m-ble').onclick = () => { mode = 'ble'; setOn('m-wifi', false); setOn('m-ble', true); st.textContent = bleOk ? '蓝牙已连接' : '请点「连接蓝牙」'; };
+document.getElementById('c-btn').onclick = () => { ctrl = 'buttons'; setOn('c-btn', true); setOn('c-gyro', false); document.getElementById('steer-pads').style.visibility = 'visible'; document.getElementById('gyrohint').style.display = 'none'; };
+document.getElementById('c-gyro').onclick = async () => {
+  const ok = await enableGyro();
+  if (!ok) { st.textContent = '手机陀螺仪授权失败'; return; }
+  ctrl = 'gyro'; setOn('c-btn', false); setOn('c-gyro', true);
+  document.getElementById('steer-pads').style.visibility = 'hidden';
+  document.getElementById('gyrohint').style.display = 'block';
+};
+document.getElementById('g-imu').onclick = () => {
+  glassImu = !glassImu;
+  document.getElementById('g-imu').textContent = glassImu ? '眼镜 IMU 开' : '眼镜 IMU 关';
+  setOn('g-imu', glassImu);
+};
+document.getElementById('cam0').onclick = () => { cam = 0; setOn('cam0', true); setOn('cam1', false); };
+document.getElementById('cam1').onclick = () => { cam = 1; setOn('cam0', false); setOn('cam1', true); };
+document.getElementById('sens').oninput = (e) => {
+  sens = Number(e.target.value) / 100;
+  document.getElementById('sensv').textContent = e.target.value + '%';
+};
+
+async function enableGyro(){
+  try{
+    if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) {
+      const p = await DeviceOrientationEvent.requestPermission();
+      if (p !== 'granted') return false;
+    }
+    if (!gyroOn) {
+      window.addEventListener('deviceorientation', (e) => {
+        const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+        let tilt = Math.abs(ang) === 90 ? (e.beta || 0) : (e.gamma || 0);
+        if (ang === -90 || ang === 270) tilt = -tilt;
+        if (!gyroZero) gyroZero = tilt;
+        let v = (tilt - gyroZero) / 35;
+        if (Math.abs(v) < 0.12) v = 0;
+        gyroSteer = Math.max(-1, Math.min(1, v));
+      });
+      gyroOn = true;
+    }
+    gyroZero = 0;
+    return true;
+  } catch(e){ return false; }
+}
+
+document.getElementById('ble-btn').onclick = async () => {
+  try {
+    st.textContent = '正在请求蓝牙…';
+    const dev = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: 'T-Glass' }],
+      optionalServices: [SERVICE]
+    });
+    const gatt = await dev.gatt.connect();
+    const svc = await gatt.getPrimaryService(SERVICE);
+    bleChar = await svc.getCharacteristic(CHAR);
+    bleOk = true;
+    mode = 'ble';
+    setOn('m-wifi', false); setOn('m-ble', true);
+    st.textContent = '蓝牙已连接 ' + (dev.name || '');
+  } catch (e) {
+    st.textContent = '蓝牙失败：' + e.message;
+  }
+};
+
+function bind(el){
+  const k = el.dataset.k;
+  const down = (ev) => { ev.preventDefault(); el.classList.add('held'); held[k] = true; };
+  const up = () => { el.classList.remove('held'); held[k] = false; };
+  el.addEventListener('pointerdown', down);
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+}
+document.querySelectorAll('.pad').forEach(bind);
+document.addEventListener('touchmove', (e) => { if (e.target.closest('.pad')) e.preventDefault(); }, {passive:false});
+
+function pack(){
+  const u = new Uint8Array(6);
+  const i = new Int8Array(u.buffer);
+  i[0] = Math.max(-127, Math.min(127, Math.round(steer * 127)));
+  u[1] = Math.max(0, Math.min(255, Math.round(throttle * 255)));
+  u[2] = Math.max(0, Math.min(255, Math.round(brake * 255)));
+  u[3] = (glassImu ? 1 : 0) | ((cam & 1) << 1);
+  u[4] = Math.max(0, Math.min(255, Math.round((sens - 0.2) / 0.8 * 255)));
+  u[5] = 1;
+  return u;
+}
+
+async function send(){
+  if (ctrl === 'gyro') steer = gyroSteer * sens;
+  else steer = ((held.left ? -1 : 0) + (held.right ? 1 : 0)) * sens;
+  throttle = held.gas ? 1 : 0;
+  brake = held.brake ? 1 : 0;
+  document.getElementById('send').textContent =
+    's ' + steer.toFixed(2) + '  t ' + throttle + '  b ' + brake + '  ' + Math.round(sens*100) + '%';
+
+  if (mode === 'ble' && bleOk && bleChar) {
+    try { await bleChar.writeValueWithoutResponse(pack()); }
+    catch (e) { try { await bleChar.writeValue(pack()); } catch (e2) {} }
+    return;
+  }
+  const url = 'http://' + host + '/ctrl?s=' + steer.toFixed(3) + '&t=' + throttle + '&b=' + brake
+    + '&imu=' + (glassImu ? 1 : 0) + '&sens=' + sens.toFixed(2) + '&cam=' + cam;
+  try {
+    const r = await fetch(url, {cache:'no-store'});
+    if (r.ok) st.textContent = 'WiFi 已发送 → ' + host;
+  } catch (e) {
+    if (mode === 'wifi') st.textContent = 'WiFi 未连上眼镜，请连热点 YC-GLASS';
+  }
+}
+setInterval(send, 40);
+</script>
+</body>
+</html>

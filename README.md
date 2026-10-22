@@ -13,7 +13,7 @@ GitHub Pages：<https://yangchhhhh.github.io/personal_web/>
 | `tools/finance.html` | 量化投资 |
 | `tools/traffic_bot.html` | 智能编队仿真 |
 | `tools/spree.html` | 挥霍模拟器 |
-| `games/` | 8 个小游戏 |
+| `games/` | 小游戏（含 Night Downhill 与眼镜手柄页） |
 | `images/` | 回忆录与封面图 |
 
 扑克入口：个人游戏、流程图笔记本、温馨回忆、项目经历、联系方式。  

@@ -13,6 +13,8 @@ GitHub Pages：<https://yangchhhhh.github.io/personal_web/>
 | `tools/finance.html` | 量化投资 |
 | `tools/traffic_bot.html` | 智能编队仿真 |
 | `tools/spree.html` | 挥霍模拟器 |
+| `tools/agx-viewer.html` | AGX 三维模型（点击爆炸） |
+| `models/agx.glb` | AGX 模型文件 |
 | `games/` | 小游戏（含 Night Downhill 与眼镜手柄页） |
 | `images/` | 回忆录与封面图 |
 

@@ -1934,7 +1934,8 @@
         applyTheme(currentTheme() === 'day' ? 'night' : 'day');
     });
 
-    function goDest(pageId) {
+    function goDest(pageId, href) {
+        if (href) { location.href = href; return; }
         if (pageId === 'traffic') {
             window._showTrafficOnLoad = true;
             switchToPage('projects');
@@ -1942,9 +1943,9 @@
             switchToPage(pageId);
         }
     }
-    function fishZoomThenGo(el, pageId, color) {
+    function fishZoomThenGo(el, pageId, color, href) {
         const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (reduce) { goDest(pageId); return; }
+        if (reduce) { goDest(pageId, href); return; }
         const r = el.getBoundingClientRect();
         const x = r.left + r.width / 2;
         const y = r.top + r.height / 2;
@@ -1956,7 +1957,7 @@
             mask.style.transition = 'clip-path 0.45s ease-out';
             mask.style.clipPath = 'circle(150vmax at ' + x + 'px ' + y + 'px)';
             setTimeout(function () {
-                goDest(pageId);
+                goDest(pageId, href);
                 mask.style.transition = 'clip-path 0.35s ease-in';
                 mask.style.clipPath = 'circle(0px at ' + x + 'px ' + y + 'px)';
             }, 520);
@@ -1971,7 +1972,8 @@
             { page: 'finance', name: '量化投资', color: '#10b981' },
             { page: 'expected', name: '预期校准器', color: '#c9a227' },
             { page: 'traffic', name: '智能编队', color: '#f97316' },
-            { page: 'spree', name: '挥霍模拟器', color: '#e8d44d' }
+            { page: 'spree', name: '挥霍模拟器', color: '#e8d44d' },
+            { page: 'agx', name: 'AGX 模型', color: '#64748b', href: 'tools/agx-viewer.html' }
         ];
         const states = [];
         fishes.forEach(function (f, i) {
@@ -1983,13 +1985,13 @@
             water.appendChild(btn);
             const st = {
                 el: btn,
-                x: 8 + i * 18,
-                y: 18 + (i % 3) * 24,
+                x: 4 + i * 15,
+                y: 16 + (i % 3) * 22,
                 vx: (i % 2 ? 1 : -1) * (0.12 + i * 0.03),
                 vy: 0.08 * (i % 2 ? 1 : -1)
             };
             states.push(st);
-            btn.addEventListener('click', function () { fishZoomThenGo(btn, f.page, f.color); });
+            btn.addEventListener('click', function () { fishZoomThenGo(btn, f.page, f.color, f.href); });
         });
         function tick() {
             const w = water.clientWidth, h = water.clientHeight;

@@ -43,10 +43,11 @@
 <script src="https://unpkg.com/three@0.160.1/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 (function () {
-  const inSite = /\/tools\/[^/]*$/.test(location.pathname) || location.pathname.indexOf("/tools/") !== -1;
-  const MODEL_URL = inSite ? "../models/agx.glb" : "./agx.glb";
+  const path = location.pathname.replace(/\\/g, "/");
+  const inTools = path.indexOf("/tools/") !== -1;
+  const MODEL_URL = inTools ? "../models/agx.glb" : "../refer/agx.glb";
   const home = document.getElementById("home");
-  if (inSite) home.hidden = false;
+  if (inTools) home.hidden = false;
 
   const status = document.getElementById("status");
   const btnExplode = document.getElementById("btnExplode");

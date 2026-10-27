@@ -2,7 +2,7 @@
 
 GitHub Pages：<https://yangchhhhh.github.io/personal_web/>
 
-静态站点，无需 Node。留言走 Railway 后端。
+静态站点，无需 Node。联系页留言只存在本机浏览器。ETF 日报由 GitHub Actions 每天生成 `tools/etf-latest.html`（可选 QQ SMTP：仓库 Secrets 配 `SMTP_USER`、`SMTP_PASS`、`MAIL_TO`）。
 
 ## 目录
 
@@ -14,6 +14,8 @@ GitHub Pages：<https://yangchhhhh.github.io/personal_web/>
 | `tools/traffic_bot.html` | 智能编队仿真 |
 | `tools/spree.html` | 挥霍模拟器 |
 | `tools/agx-viewer.html` | AGX 三维模型（点击爆炸） |
+| `tools/etf-latest.html` | ETF 轻量日报（Actions 日更） |
+| `etf-lite/` | 日报脚本（不覆盖原 etf-backend） |
 | `models/agx.glb` | AGX 模型文件 |
 | `games/` | 小游戏（含 Night Downhill 与眼镜手柄页） |
 | `images/` | 回忆录与封面图 |

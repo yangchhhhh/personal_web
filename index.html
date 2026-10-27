@@ -1316,24 +1316,10 @@
         </div>
 
         <div class="message-form" style="margin-top: 3rem;">
-            <h2 style="color:#fff; font-size: 2rem; margin-bottom: 2rem;">//send_etf_report</h2>
-            <form id="fundReportForm">
-                <div style="margin-bottom: 1rem;">
-                    <input type="email" id="fundEmail" placeholder="目标邮箱 (例如：example@foxmail.com)" required style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px;">
-                </div>
-                <div style="margin-bottom: 1rem; display: flex; gap: 1rem;">
-                    <input type="text" id="fundCode" placeholder="基金/ETF 代码（例如：518880）" style="flex: 1; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px;">
-                    <select id="fundMarket" style="padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px;">
-                        <option value="sh">上交所 (SH)</option>
-                        <option value="sz">深交所 (SZ)</option>
-                    </select>
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <textarea id="fundMessage" placeholder="补充说明（可选）" style="width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #17f700; color: #17f700; border-radius: 4px; min-height: 100px; resize: vertical;"></textarea>
-                </div>
-                <button type="submit" style="background: #17f700; color: #0d1117; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: bold;">发送ETF分析报告</button>
-            </form>
-            <div id="fundReportStatus" style="margin-top: 1rem; color: #17f700;"></div>
+            <h2 style="color:#fff; font-size: 2rem; margin-bottom: 2rem;">//etf_lite_report</h2>
+            <p style="color:#ccc; line-height:1.6; margin-bottom:1.2rem;">Railway 付费后端已停。每天北京时间约 9:00 由 GitHub Actions 自动拉行情，生成均线 / RSI 轻量日报（不含机器学习邮件）。</p>
+            <a href="tools/etf-latest.html" style="display:inline-block; background:#17f700; color:#0d1117; text-decoration:none; padding:0.75rem 1.5rem; border-radius:4px; font-weight:bold;">打开最新 ETF 报告</a>
+            <p style="color:#8b949e; font-size:0.9rem; margin-top:1rem;">可选邮件：在 GitHub 仓库 Settings → Secrets 添加 SMTP_USER、SMTP_PASS、MAIL_TO 后，定时任务会顺带发信。</p>
         </div>
         
         <div class="messages-list" style="margin-top: 3rem;">
@@ -2517,62 +2503,57 @@
         }
     })();
 
-    // 留言与基金后端接口
-    const ETF_BACKEND_API = 'https://webbacken-production.up.railway.app';
+    const CONTACT_MSGS_KEY = 'contactMessages';
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (ch) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+        });
+    }
+    function loadContactMessages() {
+        try { return JSON.parse(localStorage.getItem(CONTACT_MSGS_KEY) || '[]'); }
+        catch (e) { return []; }
+    }
+    function saveContactMessages(list) {
+        localStorage.setItem(CONTACT_MSGS_KEY, JSON.stringify(list));
+    }
     document.addEventListener('DOMContentLoaded', function() {
         const messageForm = document.getElementById('messageForm');
-        if (messageForm) messageForm.addEventListener('submit', async function(e) {
+        if (messageForm) messageForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const name = document.getElementById('msg2Name').value;
-            const nickname = document.getElementById('msg2Nickname').value;
+            const name = document.getElementById('msg2Name').value.trim() || 'ANONYMOUS';
+            const nickname = document.getElementById('msg2Nickname').value.trim();
             const message = document.getElementById('msg2Content').value;
-            
+            const statusEl = document.getElementById('messageStatus');
             if (!message || message.trim() === "") {
-                document.getElementById('messageStatus').textContent = '留言内容不能为空！';
+                statusEl.textContent = '留言内容不能为空！';
                 return;
             }
-            
-            try {
-                const response = await fetch(`${ETF_BACKEND_API}/api/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, nickname, message }) });
-                const result = await response.json();
-                document.getElementById('messageStatus').textContent = result.message || '留言发送成功！';
-                document.getElementById('messageForm').reset();
-                loadMessages();
-            } catch (error) { document.getElementById('messageStatus').textContent = '发送失败，请稍后重试。'; console.error(error); }
+            const list = loadContactMessages();
+            list.push({ name, nickname, message: message.trim(), timestamp: Date.now() });
+            saveContactMessages(list);
+            statusEl.textContent = '已保存在这台设备（原 Railway 后端已停，无法再同步到服务器）。';
+            messageForm.reset();
+            loadMessages();
         });
-        async function loadMessages() {
-            try {
-                const response = await fetch(`${ETF_BACKEND_API}/api/messages`);
-                const data = await response.json();
-                const container = document.getElementById('messagesContainer');
-                if (!container) return;
-                container.innerHTML = '';
-                data.messages.forEach(msg => {
-                    const msgDiv = document.createElement('div');
-                    msgDiv.style.cssText = `background: rgba(255,255,255,0.05); border:1px solid #17f700; border-radius:8px; padding:1rem; margin-bottom:1rem;`;
-                    msgDiv.innerHTML = `<div style="color:#fff; font-weight:bold;">${msg.name}${msg.nickname ? ` (${msg.nickname})` : ''}</div><div style="color:#17f700; margin:0.5rem 0;">${msg.message}</div><div style="color:#666; font-size:0.8rem;">${new Date(msg.timestamp).toLocaleString()}</div>`;
-                    container.appendChild(msgDiv);
-                });
-            } catch (error) { console.error('Error loading messages:', error); }
+        function loadMessages() {
+            const container = document.getElementById('messagesContainer');
+            if (!container) return;
+            const data = loadContactMessages();
+            container.innerHTML = '';
+            if (!data.length) {
+                container.innerHTML = '<p style="color:#8b949e;">留言只存在本机浏览器里。</p>';
+                return;
+            }
+            data.slice().reverse().forEach(function (msg) {
+                const msgDiv = document.createElement('div');
+                msgDiv.style.cssText = 'background: rgba(255,255,255,0.05); border:1px solid #17f700; border-radius:8px; padding:1rem; margin-bottom:1rem;';
+                const nick = msg.nickname ? ' (' + escapeHtml(msg.nickname) + ')' : '';
+                msgDiv.innerHTML = '<div style="color:#fff; font-weight:bold;">' + escapeHtml(msg.name) + nick + '</div>'
+                    + '<div style="color:#17f700; margin:0.5rem 0;">' + escapeHtml(msg.message) + '</div>'
+                    + '<div style="color:#666; font-size:0.8rem;">' + new Date(msg.timestamp).toLocaleString() + '</div>';
+                container.appendChild(msgDiv);
+            });
         }
-        const fundReportForm = document.getElementById('fundReportForm');
-        if (fundReportForm) fundReportForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const email = document.getElementById('fundEmail').value.trim();
-            const fundCode = document.getElementById('fundCode').value.trim();
-            const fundMarket = document.getElementById('fundMarket').value;
-            const text = document.getElementById('fundMessage').value.trim();
-            const statusEl = document.getElementById('fundReportStatus');
-            if (!email) { statusEl.textContent = '请填写收件邮箱。'; return; }
-            statusEl.textContent = '正在请求发送报告，请稍候...';
-            const fullFundCode = fundCode ? `${fundCode}.${fundMarket.toUpperCase()}` : undefined;
-            try {
-                const resp = await fetch(`${ETF_BACKEND_API}/api/send_report`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ emails: [email], fund_code: fullFundCode, note: text || undefined }) });
-                const result = await resp.json();
-                if (resp.ok) statusEl.textContent = '请求已发送，后台正在处理邮件：' + (result.message || '请到邮箱查看。');
-                else statusEl.textContent = '发送失败：' + (result.error || '请稍后再试。');
-            } catch (err) { statusEl.textContent = '网络异常，请检查后端是否可用。'; console.error(err); }
-        });
         loadMessages();
     });
 </script>

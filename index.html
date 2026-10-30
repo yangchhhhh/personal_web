@@ -7,6 +7,13 @@
     <script>try{var _t=localStorage.getItem('yc-theme');if(_t==='night'||_t==='day')document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
     <script src="https://fastly.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
     <script src="https://fastly.jsdelivr.net/npm/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://fastly.jsdelivr.net/npm/three@0.160.1/build/three.module.js"
+        }
+    }
+    </script>
     <style>
         /* ---------- 全局重置 & 基础风格 ---------- */
         * {
@@ -543,129 +550,112 @@
         .contact-item span:first-child { font-weight: bold; color: #fff; }
         .contact-item span:last-child { color: #17f700; word-break: break-all; }
 
-        /* ---------- PROJECTS 时间轴样式 ---------- */
-        .timeline-container {
+        /* ---------- PROJECTS 3D 时间轴 ---------- */
+        .exp-head {
+            text-align: center;
+            padding: 6.5rem 1.5rem 0.5rem;
+        }
+        .exp-head h1 {
+            font-size: 3rem;
+            color: #fff;
+            text-shadow: 0 0 18px #17f700;
+        }
+        .exp-head p {
+            color: #8b949e;
+            margin-top: 0.7rem;
+            font-size: 1rem;
+        }
+        .exp-timeline {
             position: relative;
-            max-width: 1200px;
-            margin: 10vh auto;
-            padding: 5vh 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 5rem;
         }
-        .timeline-line {
-            position: absolute;
-            left: 50%;
-            top: 0;
-            height: 100%;
-            width: 4px;
-            background: #333;
-            transform: translateX(-50%);
-            z-index: 0;
-        }
-        .timeline-line::after {
+        .exp-timeline::before {
             content: '';
             position: absolute;
             left: 50%;
             top: 0;
-            width: 4px;
-            height: 100%;
+            bottom: 0;
+            width: 2px;
             transform: translateX(-50%);
-            background: linear-gradient(to bottom, transparent, #17f700 50%, transparent);
-            background-size: 4px 50px;
+            background: linear-gradient(to bottom, transparent, #17f700 6%, #17f700 94%, transparent);
         }
-        .timeline-item {
+        .exp-stop {
             position: relative;
-            width: 100%;
-            margin: 80px 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1;
+            margin: 0 0 3.5rem;
         }
-        .timeline-circle {
-            width: 150px;
-            height: 150px;
+        .exp-rail {
+            position: absolute;
+            left: 50%;
+            top: 1rem;
+            transform: translateX(-50%);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.45rem;
+        }
+        .exp-rail::before {
+            content: '';
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: #0d1117;
-            border: 6px solid #17f700;
-            position: absolute;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            transition: 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            box-shadow: 0 0 15px rgba(23, 247, 0, 0.5);
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            border: 3px solid #17f700;
+            box-shadow: 0 0 14px rgba(23, 247, 0, 0.75);
         }
-        .timeline-item:hover .timeline-circle,
-        .timeline-item.active .timeline-circle {
-            width: 180px;
-            height: 180px;
-            border-color: #fff;
-            transform: translate(-50%, -50%) rotate(360deg);
-            box-shadow: 0 0 40px rgba(23, 247, 0, 0.8);
-        }
-        .timeline-time {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            top: -90px;
-            font-size: 2rem;
-            font-weight: bold;
+        .exp-time {
             color: #fff;
-            text-shadow: 0 0 10px #17f700;
+            font-weight: bold;
+            font-size: 0.95rem;
             white-space: nowrap;
+            background: #0d1117;
+            padding: 0.15rem 0.45rem;
+            text-shadow: 0 0 10px #17f700;
         }
-        /* 左右交替年份位置 */
-        .timeline-item.left .timeline-time {
-            left: calc(50% - 200px);
-            transform: translateX(0);
-        }
-        .timeline-item.right .timeline-time {
-            left: calc(50% + 160px);
-            transform: translateX(0);
-        }
-        .timeline-content {
-            width: 450px;
-            background: rgba(13, 17, 23, 0.95);
+        .exp-frame {
+            width: calc(50% - 52px);
+            margin-left: auto;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            background: rgba(13, 17, 23, 0.92);
             border: 2px solid #17f700;
-            border-radius: 1rem;
-            padding: 2rem;
+            border-radius: 1.25rem;
+            overflow: hidden;
+            box-shadow: 0 0 28px rgba(23, 247, 0, 0.16);
+        }
+        .exp-stop:nth-child(even) .exp-frame { margin-left: 0; margin-right: auto; }
+        .exp-stop:nth-child(odd) .exp-stage { order: 1; }
+        .exp-stop:nth-child(odd) .exp-copy { order: 2; }
+        .exp-stop:nth-child(even) .exp-copy { order: 1; }
+        .exp-stop:nth-child(even) .exp-stage { order: 2; }
+        .exp-stage {
+            position: relative;
+            height: 280px;
+            background: #12151c;
+        }
+        .exp-stage:not([data-model]) { display: none; }
+        .exp-frame:has(.exp-stage:not([data-model])) { grid-template-columns: 1fr; }
+        .exp-stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+        .exp-status {
             position: absolute;
-            top: -70px;
-            backdrop-filter: blur(10px);
-            opacity: 0;
-            transform: scale(0.5) translateY(100px);
-            pointer-events: none;
-            transition: 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-        }
-        .timeline-content h3 { font-size: 2rem; color: #fff; margin-bottom: 1rem; border-bottom: 2px solid #17f700; padding-bottom: 0.5rem; }
-        .timeline-content p { font-size: 1.2rem; line-height: 1.6; color: #ccc; margin-bottom: 1rem; }
-        .timeline-item.right .timeline-content { left: calc(50% + 100px); transform: scale(0.5) translateX(-100px); }
-        .timeline-item.left .timeline-content { right: calc(50% + 100px); transform: scale(0.5) translateX(100px); }
-        .timeline-item.active.right .timeline-content,
-        .timeline-item.active.left .timeline-content {
-            opacity: 1;
-            transform: scale(1) translateX(0);
-            pointer-events: auto;
-        }
-        .project-img {
-            width: 100%;
-            height: 180px;
-            background: #222;
-            border: 1px dashed #17f700;
-            border-radius: 10px;
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 1rem;
-            color: #17f700;
-            object-fit: cover;
+            color: #9aa6b5;
+            pointer-events: none;
         }
+        .exp-copy { padding: 1.4rem 1.25rem 1.5rem; }
+        .exp-copy h3 {
+            color: #fff;
+            font-size: 1.55rem;
+            margin-bottom: 0.7rem;
+            border-bottom: 2px solid #17f700;
+            padding-bottom: 0.45rem;
+        }
+        .exp-copy p { color: #ccc; line-height: 1.65; font-size: 1rem; }
 
         /* RELAX 页面 a-waves 样式 */
         .relax-full {
@@ -681,11 +671,19 @@
         a-waves svg path { fill:none; stroke:#17f700; stroke-width:1px; }
 
         @media (max-width: 800px) {
-            .timeline-time { top: -110px; font-size: 1.4rem; }
-            .timeline-item.left .timeline-time { left: calc(50% - 100px); }
-            .timeline-item.right .timeline-time { left: calc(50% + 100px); }
-            .timeline-circle { width: 80px; height: 80px; }
-            .timeline-content { width: 260px; }
+            .exp-head { padding-top: 5.5rem; }
+            .exp-head h1 { font-size: 2.1rem; }
+            .exp-timeline { padding-left: 1rem; padding-right: 1rem; }
+            .exp-timeline::before { left: 14px; transform: none; }
+            .exp-rail { left: 14px; top: 0; align-items: flex-start; }
+            .exp-time { position: absolute; left: 22px; top: -4px; }
+            .exp-frame {
+                width: auto;
+                margin: 2rem 0 0 32px !important;
+                grid-template-columns: 1fr;
+            }
+            .exp-stage { order: 1 !important; height: 240px; }
+            .exp-copy { order: 2 !important; }
         }
         /* 回忆录页面 */
         #page-memory { background: linear-gradient(145deg, #fff9ef 0%, #fff1e0 100%); min-height: 100vh; position: relative; }
@@ -957,46 +955,6 @@
             #page-expected .expected-dashboard {
                 gap: 1rem;
             }
-        }
-
-        /* ---------- 项目卡片样式 ---------- */
-        #projectCardContainer {
-            display: flex;
-            justify-content: center;
-            margin: 3rem 0 4rem;
-            width: 100%;
-        }
-        #projectCard {
-            flex: 0 0 auto;
-            background: rgba(13,17,23,0.9);
-            border: 2px solid #17f700;
-            border-radius: 1.5rem;
-            padding: 1.5rem;
-            box-shadow: 0 0 30px rgba(23,247,0,0.2);
-            cursor: pointer;
-            transition: 0.3s;
-            text-align: center;
-            max-width: 90%;
-            width: 350px; /* 固定宽度，彻底居中 */
-        }
-        #projectCard:hover {
-            transform: scale(1.02);
-            border-color: #fff;
-            box-shadow: 0 0 40px rgba(23,247,0,0.5);
-        }
-
-        #trafficIframeContainer {
-            display: none;
-            width: 100%;
-            height: 90vh;
-            position: relative;
-            margin-top: 2rem;
-        }
-        #trafficIframeContainer iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            border-radius: 1rem;
         }
 
         /* ---------- 昼夜主题 & 像素鱼塘 ---------- */
@@ -1330,21 +1288,53 @@
 </div>
 
 <!-- ========================= 页面4: PROJECTS ========================= -->
+<!-- 调整顺序：移动 article。新增一站：复制一块；不要模型就删掉 data-model。 -->
 <div id="page-projects" class="page">
-    <div class="timeline-container" id="timelineRoot">
-        <div class="timeline-line"></div>
-    </div>
-
-    <!-- 项目卡片（潮汐车道机器人） -->
-    <div id="projectCardContainer">
-        <div id="projectCard">
-            <h3 style="color:#17f700; margin-top:1rem;">🚦 潮汐车道 · 智能编队调度系统</h3>
-            <p style="color:#ccc; font-size:0.9rem;">点击进入交互仿真</p>
-        </div>
-    </div>
-
-    <div id="trafficIframeContainer">
-        <iframe src="tools/traffic_bot.html"></iframe>
+    <header class="exp-head">
+        <h1>项目经历</h1>
+        <p>沿时间往下，每一站是一段经历。拖动模型旋转，滚轮缩放。</p>
+    </header>
+    <div class="exp-timeline" id="expTimeline">
+        <article class="exp-stop">
+            <div class="exp-rail"><span class="exp-time">时间</span></div>
+            <div class="exp-frame">
+                <div class="exp-stage" data-model="models/main_shield_cover.glb"></div>
+                <div class="exp-copy">
+                    <h3>主盾盖</h3>
+                    <p>在这里填写这段经历。</p>
+                </div>
+            </div>
+        </article>
+        <article class="exp-stop">
+            <div class="exp-rail"><span class="exp-time">时间</span></div>
+            <div class="exp-frame">
+                <div class="exp-stage" data-model="models/mud_encapsulation.glb"></div>
+                <div class="exp-copy">
+                    <h3>泥水封装</h3>
+                    <p>在这里填写这段经历。</p>
+                </div>
+            </div>
+        </article>
+        <article class="exp-stop">
+            <div class="exp-rail"><span class="exp-time">时间</span></div>
+            <div class="exp-frame">
+                <div class="exp-stage" data-model="models/shield_bucket_cover.glb"></div>
+                <div class="exp-copy">
+                    <h3>盾构刀盘盖</h3>
+                    <p>在这里填写这段经历。</p>
+                </div>
+            </div>
+        </article>
+        <article class="exp-stop">
+            <div class="exp-rail"><span class="exp-time">时间</span></div>
+            <div class="exp-frame">
+                <div class="exp-stage" data-model="models/agx.glb"></div>
+                <div class="exp-copy">
+                    <h3>AGX</h3>
+                    <p>在这里填写这段经历。</p>
+                </div>
+            </div>
+        </article>
     </div>
 </div>
 
@@ -1495,36 +1485,9 @@
         out() { this.container.classList.add('loading_out'); }
     };
 
-    // 项目卡片控制
-    const projectCard = document.getElementById('projectCard');
-    const timelineRoot = document.getElementById('timelineRoot');
-    const projectCardContainer = document.getElementById('projectCardContainer');
-    const trafficIframeContainer = document.getElementById('trafficIframeContainer');
-
-    function showTrafficProject() {
-        if (timelineRoot) timelineRoot.style.display = 'none';
-        if (projectCardContainer) projectCardContainer.style.display = 'none';
-        if (trafficIframeContainer) trafficIframeContainer.style.display = 'block';
-    }
-
-    function hideTrafficProject() {
-        if (trafficIframeContainer) trafficIframeContainer.style.display = 'none';
-        if (timelineRoot) timelineRoot.style.display = 'block';
-        if (projectCardContainer) projectCardContainer.style.display = 'block';
-    }
-
-    if (projectCard) {
-        projectCard.addEventListener('click', function(e) {
-            e.stopPropagation();
-            showTrafficProject();
-        });
-    }
-
     function switchToPage(pageId, showLoadingEffect = true) {
         if (currentPage === pageId) return;
-        if (currentPage === 'projects' && trafficIframeContainer.style.display === 'block') {
-            hideTrafficProject();
-        }
+        if (currentPage === 'projects') pauseExperiencePage();
         if (currentPage === 'memory' && window.__memoryCleanup) window.__memoryCleanup();
         const doSwitch = () => {
             Object.keys(pages).forEach(id => {
@@ -1550,13 +1513,7 @@
                 const tipBox = document.getElementById('gameWarmTip');
                 if (tipBox) tipBox.style.display = 'flex';
             }
-            if (pageId === 'projects') reinitProjectsToggle();
-            if (pageId === 'projects' && window._showTrafficOnLoad) {
-                setTimeout(() => {
-                    showTrafficProject();
-                    window._showTrafficOnLoad = false;
-                }, 300);
-            }
+            if (pageId === 'projects') initExperiencePage();
             if (pageId === 'relax') initRelaxPage();
             if (pageId === 'memory') initmemoryScroll();
             if (globalLenis) globalLenis.scrollTo(0, { duration: 0 });
@@ -1570,9 +1527,6 @@
     }
 
     function goBackHome() {
-        if (currentPage === 'projects' && trafficIframeContainer.style.display === 'block') {
-            hideTrafficProject();
-        }
         switchToPage('main');
     }
 
@@ -1707,83 +1661,222 @@
         });
     }
 
-    // ---------- PROJECTS 时间轴 ----------
-    function reinitProjectsToggle() {
-        const items = document.querySelectorAll('#page-projects .timeline-item');
-        items.forEach(item => {
-            item.onclick = (e) => {
-                e.stopPropagation();
-                item.classList.toggle('active');
-                if (globalLenis) setTimeout(() => globalLenis.resize(), 300);
-            };
+    // ---------- PROJECTS 3D 时间轴 ----------
+    const EXP_ORBIT_URL = 'https://fastly.jsdelivr.net/npm/three@0.160.1/examples/jsm/controls/OrbitControls.js';
+    const EXP_GLTF_URL = 'https://fastly.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
+    const EXP_DRACO_URL = 'https://fastly.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/DRACOLoader.js';
+    const EXP_DRACO_PATH = 'https://fastly.jsdelivr.net/npm/three@0.160.1/examples/jsm/libs/draco/gltf/';
+    const EXP_ROOM_URL = 'https://fastly.jsdelivr.net/npm/three@0.160.1/examples/jsm/environments/RoomEnvironment.js';
+    let expThreeReady = null;
+    let expObserver = null;
+    let expPageActive = false;
+
+    function ensureThree() {
+        if (!expThreeReady) {
+            expThreeReady = Promise.all([
+                import('three'),
+                import(EXP_ORBIT_URL),
+                import(EXP_GLTF_URL),
+                import(EXP_DRACO_URL),
+                import(EXP_ROOM_URL)
+            ]).then(([THREE, controls, loaders, dracoMod, roomMod]) => {
+                const draco = new dracoMod.DRACOLoader();
+                draco.setDecoderPath(EXP_DRACO_PATH);
+                return {
+                    THREE,
+                    OrbitControls: controls.OrbitControls,
+                    GLTFLoader: loaders.GLTFLoader,
+                    RoomEnvironment: roomMod.RoomEnvironment,
+                    draco
+                };
+            });
+        }
+        return expThreeReady;
+    }
+
+    function mountExperienceViewer(stage, api) {
+        const url = stage.getAttribute('data-model');
+        if (!url || stage._viewer) return;
+        const { THREE, OrbitControls, GLTFLoader, RoomEnvironment, draco } = api;
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.15;
+        renderer.setClearColor(0x12151c, 1);
+        stage.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        const pmrem = new THREE.PMREMGenerator(renderer);
+        scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+        pmrem.dispose();
+        const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 2000);
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.8;
+        scene.add(new THREE.HemisphereLight(0xcfd8e3, 0x2a3038, 1.1));
+        const key = new THREE.DirectionalLight(0xffffff, 1.35);
+        key.position.set(2, 4, 3);
+        scene.add(key);
+        const fill = new THREE.DirectionalLight(0x88aacc, 0.45);
+        fill.position.set(-3, 1, -2);
+        scene.add(fill);
+
+        const status = document.createElement('div');
+        status.className = 'exp-status';
+        status.textContent = '加载模型…';
+        stage.appendChild(status);
+
+        let visible = false;
+        let interacting = false;
+        let rafId = 0;
+
+        function resize() {
+            const w = stage.clientWidth || 1;
+            const h = stage.clientHeight || 1;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h, false);
+            renderer.domElement.style.width = '100%';
+            renderer.domElement.style.height = '100%';
+        }
+
+        function fitCamera(obj) {
+            const box = new THREE.Box3().setFromObject(obj);
+            const size = box.getSize(new THREE.Vector3());
+            const c = box.getCenter(new THREE.Vector3());
+            const max = Math.max(size.x, size.y, size.z) || 1;
+            camera.near = max / 200;
+            camera.far = max * 80;
+            camera.updateProjectionMatrix();
+            camera.position.copy(c).add(new THREE.Vector3(max * 1.2, max * 0.8, max * 1.4));
+            controls.target.copy(c);
+            controls.update();
+        }
+
+        function loop() {
+            rafId = 0;
+            if (!visible || !expPageActive) return;
+            controls.autoRotate = !interacting;
+            controls.update();
+            renderer.render(scene, camera);
+            rafId = requestAnimationFrame(loop);
+        }
+
+        function setVisible(on) {
+            visible = !!on && expPageActive;
+            if (!visible) {
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = 0;
+                return;
+            }
+            if (!rafId) loop();
+        }
+
+        function pause() {
+            visible = false;
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = 0;
+        }
+
+        const ro = new ResizeObserver(resize);
+        ro.observe(stage);
+        resize();
+
+        function holdScroll() {
+            interacting = true;
+            if (globalLenis) globalLenis.stop();
+        }
+        function releaseScroll() {
+            interacting = false;
+            if (globalLenis && expPageActive) globalLenis.start();
+        }
+        renderer.domElement.addEventListener('pointerenter', holdScroll);
+        renderer.domElement.addEventListener('pointerdown', holdScroll);
+        renderer.domElement.addEventListener('pointerleave', releaseScroll);
+        renderer.domElement.addEventListener('wheel', (e) => e.stopPropagation(), { passive: false });
+
+        let loadStarted = false;
+        function ensureLoaded() {
+            if (loadStarted) return;
+            loadStarted = true;
+            const loader = new GLTFLoader();
+            loader.setDRACOLoader(draco);
+            loader.load(url, (gltf) => {
+                scene.add(gltf.scene);
+                resize();
+                fitCamera(gltf.scene);
+                status.remove();
+                if (visible && expPageActive && !rafId) loop();
+            }, undefined, () => {
+                status.textContent = '模型加载失败';
+            });
+        }
+
+        const viewer = {
+            setVisible(on) {
+                setVisible(on);
+                if (visible) ensureLoaded();
+            },
+            pause,
+            resize
+        };
+        renderer.domElement.addEventListener('pointerup', (e) => {
+            if (e.pointerType === 'touch') releaseScroll();
+        });
+        renderer.domElement.addEventListener('pointercancel', releaseScroll);
+        stage._viewer = viewer;
+    }
+
+    function syncExperienceVisibility() {
+        document.querySelectorAll('#page-projects .exp-stage[data-model]').forEach(stage => {
+            if (!stage._viewer) return;
+            const r = stage.getBoundingClientRect();
+            const on = r.width > 0 && r.bottom > 0 && r.top < window.innerHeight;
+            stage._viewer.setVisible(on);
         });
     }
 
-    function buildTimeline() {
-        const container = document.getElementById('timelineRoot');
-        if (!container) return;
-        container.innerHTML = '<div class="timeline-line"></div>';
-        const timelineData = [
-            { year: "2003.5", desc: "出生 · 人生启程", img: null },
-            { year: "2009.6", desc: "幼儿园毕业 · 初识世界", img: "images/Kindergarten.jpg" },
-            { year: "2015.6", desc: "小学毕业 · 懵懂少年", img: "images/Primary_School.jpg" },
-            { year: "2015.9", desc: "初中入学 · 新的征程", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "2018.6", desc: "初中毕业 · 青春成长", img: null },
-            { year: "2018.9", desc: "高中入学 · 冲刺梦想", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "2020", desc: "法国之旅 · 异国文化体验", img: null },
-            { year: "2020", desc: "疫情爆发 · 回国居家", img: null },
-            { year: "2021.6", desc: "高中毕业 · 官方版", img: "images/highschool.jpg" },
-            { year: "2021.9", desc: "大学入学 · 专业探索", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "秘密", desc: " 专利 ", img: "images/zl.png" },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "", desc: "—— 空白节点 ——", img: null },
-            { year: "2025.6", desc: "大学本科毕业 · 学位授予", img: null },
-            { year: "2026.1至今", desc: "探索 · 新阶段", img: null }
-        ];
-        if (timelineData[0]) timelineData[0].img = "images/ych.jpg";
-        timelineData.forEach((item, index) => {
-            const side = (index % 2 === 0) ? 'left' : 'right';
-            const timelineItem = document.createElement('div');
-            timelineItem.className = `timeline-item ${side}`;
-            const timeSpan = document.createElement('p');
-            timeSpan.className = 'timeline-time';
-            timeSpan.textContent = item.year || '—';
-            timelineItem.appendChild(timeSpan);
-            const circleDiv = document.createElement('div');
-            circleDiv.className = 'timeline-circle';
-            if (item.img) {
-                const img = document.createElement('img');
-                img.src = item.img;
-                img.style.width = '100%';
-                img.style.height = '100%';
-                img.style.objectFit = 'cover';
-                circleDiv.appendChild(img);
-            } else {
-                const placeholder = document.createElement('span');
-                placeholder.textContent = item.year ? item.year.slice(0,4) : '●';
-                placeholder.style.fontSize = '1.2rem';
-                placeholder.style.color = '#17f700';
-                circleDiv.appendChild(placeholder);
+    function initExperiencePage() {
+        expPageActive = true;
+        ensureThree().then((api) => {
+            if (!expPageActive) return;
+            const stages = document.querySelectorAll('#page-projects .exp-stage[data-model]');
+            stages.forEach((stage) => mountExperienceViewer(stage, api));
+            if (!expObserver) {
+                expObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        const viewer = entry.target._viewer;
+                        if (!viewer) return;
+                        if (entry.isIntersecting) viewer.setVisible(true);
+                        else viewer.setVisible(false);
+                    });
+                }, { rootMargin: '20% 0px', threshold: 0.05 });
+                stages.forEach(stage => expObserver.observe(stage));
             }
-            timelineItem.appendChild(circleDiv);
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'timeline-content';
-            contentDiv.innerHTML = `<h3>${item.year || '事件'}</h3><p>${item.desc}</p>`;
-            timelineItem.appendChild(contentDiv);
-            container.appendChild(timelineItem);
+            requestAnimationFrame(() => {
+                stages.forEach(stage => { if (stage._viewer) stage._viewer.resize(); });
+                syncExperienceVisibility();
+                if (globalLenis) globalLenis.resize();
+            });
+        }).catch(() => {
+            document.querySelectorAll('#page-projects .exp-stage[data-model]').forEach(stage => {
+                if (stage.querySelector('.exp-status')) return;
+                const status = document.createElement('div');
+                status.className = 'exp-status';
+                status.textContent = '模型加载失败';
+                stage.appendChild(status);
+            });
         });
-        reinitProjectsToggle();
+    }
+
+    function pauseExperiencePage() {
+        expPageActive = false;
+        document.querySelectorAll('#page-projects .exp-stage').forEach(stage => {
+            if (stage._viewer) stage._viewer.pause();
+        });
+        if (globalLenis) globalLenis.start();
     }
 
     // RELAX 页面初始化
@@ -1893,12 +1986,7 @@
         const href = topCard.getAttribute('data-href');
         if (href) { location.href = href; return; }
         const pageId = topCard.getAttribute('data-page');
-        if (pageId === 'traffic') {
-            window._showTrafficOnLoad = true;
-            switchToPage('projects');
-        } else if (pageId) {
-            switchToPage(pageId);
-        }
+        if (pageId) switchToPage(pageId);
     }
     document.getElementById('pokerTopClick')?.addEventListener('click', cyclePoker);
     document.getElementById('enterCommandBtn')?.addEventListener('click', executePoker);
@@ -1922,12 +2010,7 @@
 
     function goDest(pageId, href) {
         if (href) { location.href = href; return; }
-        if (pageId === 'traffic') {
-            window._showTrafficOnLoad = true;
-            switchToPage('projects');
-        } else if (pageId) {
-            switchToPage(pageId);
-        }
+        if (pageId) switchToPage(pageId);
     }
     function fishZoomThenGo(el, pageId, color, href) {
         const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1957,7 +2040,7 @@
             { page: 'relax', name: '解压时刻', color: '#4A90E2' },
             { page: 'finance', name: '量化投资', color: '#10b981' },
             { page: 'expected', name: '预期校准器', color: '#c9a227' },
-            { page: 'traffic', name: '智能编队', color: '#f97316' },
+            { page: 'traffic', name: '智能编队', color: '#f97316', href: 'tools/traffic_bot.html' },
             { page: 'spree', name: '挥霍模拟器', color: '#e8d44d' },
             { page: 'agx', name: 'AGX 模型', color: '#64748b', href: 'tools/agx-viewer.html' }
         ];
@@ -2119,7 +2202,6 @@
     window.addEventListener('load', () => {
         loading.out();
         initMainMessages();
-        buildTimeline();
         initRelaxPage();
         bindGameCardClicks();
         const speedSlider = document.getElementById('speedSlider');
